@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PredictionCard from "./PredictionCard";
 import CountryFilter from "./CountryFilter";
 import CategoryFilter from "./CategoryFilter";
-import { usePredictionStore } from "@/lib/stores/usePredictionStore";
+import { predictions } from "@/data/predictions";
 
 type Props = {
   title: string;
   limit?: number;
   description?: string;
   showFilters?: boolean;
+  initialCountry?: string | null;
+  initialCategory?: string | null;
 };
 
 export default function PredictionsBoard({
@@ -18,12 +20,19 @@ export default function PredictionsBoard({
   limit,
   description,
   showFilters = true,
+  initialCountry = null,
+  initialCategory = null,
 }: Props) {
-  const { predictions, countryFilter, categoryFilter } = usePredictionStore((state) => ({
-    predictions: state.predictions,
-    countryFilter: state.countryFilter,
-    categoryFilter: state.categoryFilter,
-  }));
+  const [countryFilter, setCountryFilter] = useState<string | null>(initialCountry);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(initialCategory);
+
+  useEffect(() => {
+    setCountryFilter(initialCountry ?? null);
+  }, [initialCountry]);
+
+  useEffect(() => {
+    setCategoryFilter(initialCategory ?? null);
+  }, [initialCategory]);
 
   const filtered = useMemo(() => {
     return predictions.filter((prediction) => {
@@ -35,7 +44,7 @@ export default function PredictionsBoard({
         : true;
       return matchesCountry && matchesCategory;
     });
-  }, [predictions, countryFilter, categoryFilter]);
+  }, [countryFilter, categoryFilter]);
 
   const displayed = limit ? filtered.slice(0, limit) : filtered;
 
@@ -48,8 +57,8 @@ export default function PredictionsBoard({
 
       {showFilters && (
         <div className="space-y-4">
-          <CountryFilter />
-          <CategoryFilter />
+          <CountryFilter value={countryFilter} onChange={setCountryFilter} />
+          <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
         </div>
       )}
 
@@ -65,4 +74,3 @@ export default function PredictionsBoard({
     </section>
   );
 }
-
