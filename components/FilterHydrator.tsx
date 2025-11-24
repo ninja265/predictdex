@@ -12,14 +12,20 @@ export default function FilterHydrator({ country = null, category = null }: Prop
   useEffect(() => {
     const { setCountryFilter } = usePredictionStore.getState();
     setCountryFilter(country);
-    return () => setCountryFilter(null);
   }, [country]);
 
   useEffect(() => {
     const { setCategoryFilter } = usePredictionStore.getState();
     setCategoryFilter(category);
-    return () => setCategoryFilter(null);
   }, [category]);
+
+  useEffect(() => {
+    const { setCountryFilter, setCategoryFilter } = usePredictionStore.getState();
+    return () => {
+      setCountryFilter(null);
+      setCategoryFilter(null);
+    };
+  }, []);
 
   return null;
 }
