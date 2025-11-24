@@ -9,18 +9,17 @@ type Props = {
 };
 
 export default function FilterHydrator({ country = null, category = null }: Props) {
-  const setCountryFilter = usePredictionStore((state) => state.setCountryFilter);
-  const setCategoryFilter = usePredictionStore((state) => state.setCategoryFilter);
-
   useEffect(() => {
+    const { setCountryFilter } = usePredictionStore.getState();
     setCountryFilter(country);
     return () => setCountryFilter(null);
-  }, [country, setCountryFilter]);
+  }, [country]);
 
   useEffect(() => {
+    const { setCategoryFilter } = usePredictionStore.getState();
     setCategoryFilter(category);
     return () => setCategoryFilter(null);
-  }, [category, setCategoryFilter]);
+  }, [category]);
 
   return null;
 }
