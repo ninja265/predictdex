@@ -78,6 +78,9 @@ Optional:
 - [ ] Integrate real market maker and liquidity pools
 - [ ] Add user authentication and portfolio tracking
 
+## Documentation
+- **Technical Architecture Document:** `docs/TECHNICAL_ARCHITECTURE_DOCUMENT.md` - Comprehensive technical reference covering system architecture, component specifications, state management, Web3 integration, and future roadmap.
+
 ## Notes
 - This is a frontend showcase/demo application
 - All trading functionality uses mock data
