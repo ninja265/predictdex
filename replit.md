@@ -100,10 +100,18 @@ The Technical Architecture Document contains complete specifications for buildin
 - [ ] Admin dashboard
 - [ ] Leaderboards and reporting
 
+## Web3 Wallet Architecture
+- **Non-Custodial Wallets:** MetaMask, Phantom, WalletConnect, Coinbase Wallet, Rainbow
+- **Deposit Flow:** Users deposit USDC/ETH from their wallet → CollateralVault smart contract → Off-chain ledger for trading
+- **Supported Chains:** Ethereum, Polygon, Arbitrum, BSC
+- **Phantom/Solana:** Bridged via Wormhole (V2 feature)
+- **Withdrawal Security:** EIP-712 signatures, velocity limits, multi-sig for large amounts, 24-hour time locks
+
 ## Documentation
 - **Technical Architecture Document:** `docs/TECHNICAL_ARCHITECTURE_DOCUMENT.md`
   - Part I: Frontend Architecture (Implemented) - Sections 1-13
   - Part II: Backend Architecture (Planning) - Sections 14-26
+  - Section 21: Web3 Wallet Integration - CollateralVault, DepositRouter, deposit/withdrawal flows
   - Includes: API specifications, database schemas, trading engine design, smart contract interfaces, oracle system, real-time infrastructure, admin functions, and implementation roadmap
 
 ## Notes

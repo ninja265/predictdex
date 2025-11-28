@@ -3427,13 +3427,286 @@ function calculateSettlement(
 
 ---
 
-## 21. Smart Contract Architecture
+## 21. Web3 Wallet Integration & Platform Wallet
 
-### 21.1 Contract Overview
+### 21.0 Wallet Architecture Overview
+
+Users connect their non-custodial Web3 wallets (MetaMask, Phantom, WalletConnect) to deposit funds (USDC, ETH) into the AfricaPredicts platform wallet. The platform maintains an off-chain ledger for fast trading while funds are secured on-chain in a CollateralVault smart contract.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      WEB3 WALLET DEPOSIT FLOW                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────────────┐
+  │   MetaMask   │     │   Phantom    │     │   Other Web3 Wallets        │
+  │   (EVM)      │     │   (Solana)   │     │   (WalletConnect, Coinbase) │
+  └──────┬───────┘     └──────┬───────┘     └──────────────┬───────────────┘
+         │                    │                            │
+         │  User owns         │  User owns                 │  User owns
+         │  USDC, ETH         │  USDC, SOL                 │  USDC, ETH
+         │                    │                            │
+         └────────────────────┴────────────────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │  DEPOSIT ROUTER   │
+                    │  (Smart Contract) │
+                    │                   │
+                    │  • depositETH()   │
+                    │  • depositERC20() │
+                    └─────────┬─────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │  COLLATERAL VAULT │
+                    │  (Platform Wallet)│
+                    │                   │
+                    │  Holds all user   │
+                    │  deposits on-chain│
+                    └─────────┬─────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   OFF-CHAIN       │
+                    │   LEDGER          │
+                    │                   │
+                    │  Fast trading     │
+                    │  balance updates  │
+                    └───────────────────┘
+```
+
+### 21.0.1 Supported Wallets & Chains
+
+| Wallet | Type | Supported Chains | Deposit Assets |
+|--------|------|------------------|----------------|
+| **MetaMask** | Browser Extension | Ethereum, Polygon, Arbitrum, BSC | USDC, ETH, WETH |
+| **Phantom** | Browser Extension | Solana (bridged to EVM) | USDC (via Wormhole) |
+| **WalletConnect** | Mobile/Desktop | All EVM chains | USDC, ETH |
+| **Coinbase Wallet** | Browser/Mobile | Ethereum, Polygon | USDC, ETH |
+| **Rainbow** | Mobile | Ethereum, Polygon, Arbitrum | USDC, ETH |
+
+### 21.0.2 Deposit Flow (MetaMask - USDC)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    USDC DEPOSIT FLOW (ERC20)                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Step 1: User clicks "Deposit USDC"
+         │
+         ▼
+Step 2: Frontend requests deposit address from backend
+         POST /api/v1/wallet/deposit/prepare
+         { asset: "USDC", amount: 500, chain: "polygon" }
+         │
+         ▼
+Step 3: Backend returns vault address and nonce
+         {
+           vaultAddress: "0x...",
+           nonce: "abc123",
+           chainId: 137,
+           usdcAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+         }
+         │
+         ▼
+Step 4: Frontend prompts user to APPROVE USDC spending
+         usdc.approve(vaultAddress, amount)
+         │
+         ▼
+Step 5: User signs approval in MetaMask
+         │
+         ▼
+Step 6: Frontend calls vault deposit
+         vault.depositERC20(usdcAddress, amount, nonce)
+         │
+         ▼
+Step 7: Backend listens for Deposit event on-chain
+         event Deposit(address user, address token, uint256 amount, bytes32 nonce)
+         │
+         ▼
+Step 8: Backend credits user's off-chain ledger balance
+         UPDATE collateral_accounts SET usdc_available = usdc_available + 500
+         │
+         ▼
+Step 9: User can now trade on the platform
+```
+
+### 21.0.3 Deposit Flow (MetaMask - ETH)
+
+```yaml
+# ETH deposits are simpler - direct payable transfer
+Step 1: User clicks "Deposit ETH"
+Step 2: Frontend calls vault.depositETH{ value: amount }()
+Step 3: User signs transaction in MetaMask
+Step 4: Backend listens for DepositETH event
+Step 5: Backend credits user's off-chain ETH balance (stored as WETH equivalent)
+Step 6: User can trade (ETH converted to USDC value internally)
+```
+
+### 21.0.4 Phantom/Solana Bridge Flow (V2)
+
+```yaml
+# Phantom users deposit via Wormhole bridge
+Step 1: User connects Phantom wallet (Solana)
+Step 2: User initiates USDC deposit on Solana
+Step 3: Wormhole bridges USDC to EVM chain (Polygon)
+Step 4: Wrapped USDC arrives at CollateralVault
+Step 5: Backend credits user balance after bridge confirmation
+Step 6: User trades normally
+
+# Note: V1 will be EVM-only. Solana support in V2.
+Bridge Latency: 15-30 minutes
+Bridge Fee: ~$1-2 per transfer
+```
+
+### 21.0.5 Off-Chain Ledger (Trading Balance)
+
+```sql
+-- User balances are tracked off-chain for fast trading
+CREATE TABLE user_trading_balances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Available for trading (credited from on-chain deposits)
+    usdc_available DECIMAL(20,6) DEFAULT 0,
+    eth_available DECIMAL(20,18) DEFAULT 0,
+    
+    -- Locked in open orders
+    usdc_locked DECIMAL(20,6) DEFAULT 0,
+    eth_locked DECIMAL(20,18) DEFAULT 0,
+    
+    -- Total deposited on-chain (for reconciliation)
+    usdc_total_deposited DECIMAL(20,6) DEFAULT 0,
+    eth_total_deposited DECIMAL(20,18) DEFAULT 0,
+    
+    -- Total withdrawn
+    usdc_total_withdrawn DECIMAL(20,6) DEFAULT 0,
+    eth_total_withdrawn DECIMAL(20,18) DEFAULT 0,
+    
+    last_deposit_at TIMESTAMPTZ,
+    last_withdrawal_at TIMESTAMPTZ,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(user_id)
+);
+
+-- Deposit events from on-chain (for audit trail)
+CREATE TABLE on_chain_deposits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    
+    wallet_address VARCHAR(42) NOT NULL,
+    asset VARCHAR(10) NOT NULL,  -- USDC, ETH, WETH
+    amount DECIMAL(20,18) NOT NULL,
+    chain_id INTEGER NOT NULL,
+    
+    tx_hash VARCHAR(66) NOT NULL UNIQUE,
+    block_number BIGINT NOT NULL,
+    nonce VARCHAR(66),
+    
+    credited_to_ledger BOOLEAN DEFAULT FALSE,
+    credited_at TIMESTAMPTZ,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_deposits_user ON on_chain_deposits(user_id);
+CREATE INDEX idx_deposits_credited ON on_chain_deposits(credited_to_ledger);
+```
+
+### 21.0.6 Withdrawal Flow (Platform → User Wallet)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         WITHDRAWAL FLOW                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Step 1: User requests withdrawal
+         POST /api/v1/wallet/withdraw
+         { asset: "USDC", amount: 200, toAddress: "0x..." }
+         │
+         ▼
+Step 2: Backend validates:
+         ✓ Sufficient available balance
+         ✓ No open orders using these funds
+         ✓ Risk checks (velocity limits, daily caps)
+         ✓ User's risk settings allow withdrawal
+         │
+         ▼
+Step 3: Backend generates EIP-712 signature request
+         User must sign to authorize withdrawal
+         │
+         ▼
+Step 4: User signs with MetaMask (proves ownership)
+         │
+         ▼
+Step 5: Withdrawal enters queue
+         - Small amounts (<$1000): Processed automatically
+         - Large amounts (>$1000): Requires operator approval
+         - Very large (>$10,000): 24-hour time lock + multi-sig
+         │
+         ▼
+Step 6: Operator (backend/multi-sig) calls vault.withdraw()
+         vault.withdraw(userAddress, token, amount, signature)
+         │
+         ▼
+Step 7: Funds transferred to user's wallet
+         User receives USDC/ETH in MetaMask
+         │
+         ▼
+Step 8: Backend updates ledger
+         UPDATE user_trading_balances SET usdc_available = usdc_available - 200
+```
+
+### 21.0.7 Withdrawal Limits & Security
+
+```yaml
+Velocity Limits:
+  per_transaction: $10,000
+  per_day: $50,000
+  per_week: $200,000
+  per_month: $500,000
+
+Time Locks:
+  small_withdrawal: 0 (immediate)
+  medium_withdrawal: 1 hour  (> $5,000)
+  large_withdrawal: 24 hours (> $25,000)
+  
+Approval Requirements:
+  automatic: < $1,000 (passes risk checks)
+  single_operator: $1,000 - $10,000
+  multi_sig_2_of_3: > $10,000
+  
+Security Checks:
+  - User must sign EIP-712 typed data message
+  - Withdrawal address must match connected wallet
+  - Account age > 24 hours for large withdrawals
+  - No suspicious activity flags on account
+```
+
+---
+
+## 21.1 Smart Contract Architecture
+
+### 21.1.1 Contract Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        SMART CONTRACT ARCHITECTURE                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DEPOSIT CONTRACTS                                  │
+│                                                                              │
+│  ┌────────────────────┐    ┌────────────────────┐                           │
+│  │   DepositRouter    │───►│   CollateralVault  │                           │
+│  │                    │    │   (Treasury)       │                           │
+│  │  • depositETH()    │    │                    │                           │
+│  │  • depositERC20()  │    │  • Holds USDC, ETH │                           │
+│  │  • depositWithPermit│   │  • Operator-only   │                           │
+│  └────────────────────┘    │    withdrawals     │                           │
+│                            │  • Pausable        │                           │
+│                            └────────────────────┘                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -3474,6 +3747,297 @@ function calculateSettlement(
 │  └────────────────────┘    └────────────────────┘    └──────────────────┘  │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 21.1.2 CollateralVault Contract (Platform Wallet)
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+/**
+ * @title CollateralVault
+ * @notice Holds all user deposits (USDC, ETH) for the AfricaPredicts platform
+ * @dev Users deposit via DepositRouter, withdrawals require operator signature
+ */
+contract CollateralVault is Pausable, ReentrancyGuard, AccessControl {
+    using SafeERC20 for IERC20;
+    
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+    bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
+    
+    // Supported tokens (USDC addresses per chain)
+    mapping(address => bool) public supportedTokens;
+    
+    // User deposit tracking (for reconciliation)
+    mapping(address => mapping(address => uint256)) public userDeposits; // user => token => amount
+    
+    // Withdrawal nonces to prevent replay attacks
+    mapping(address => uint256) public withdrawalNonces;
+    
+    // Events for backend to sync off-chain ledger
+    event Deposit(
+        address indexed user,
+        address indexed token,
+        uint256 amount,
+        bytes32 nonce,
+        uint256 timestamp
+    );
+    
+    event DepositETH(
+        address indexed user,
+        uint256 amount,
+        bytes32 nonce,
+        uint256 timestamp
+    );
+    
+    event Withdrawal(
+        address indexed user,
+        address indexed token,
+        uint256 amount,
+        address indexed toAddress,
+        uint256 timestamp
+    );
+    
+    event EmergencyPause(address indexed guardian, string reason);
+    
+    constructor(address[] memory _supportedTokens) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(OPERATOR_ROLE, msg.sender);
+        _grantRole(GUARDIAN_ROLE, msg.sender);
+        
+        for (uint i = 0; i < _supportedTokens.length; i++) {
+            supportedTokens[_supportedTokens[i]] = true;
+        }
+    }
+    
+    /**
+     * @notice Deposit ERC20 tokens (USDC)
+     * @param token Token address (must be approved first)
+     * @param amount Amount to deposit
+     * @param nonce Unique nonce for backend tracking
+     */
+    function depositERC20(
+        address token,
+        uint256 amount,
+        bytes32 nonce
+    ) external nonReentrant whenNotPaused {
+        require(supportedTokens[token], "Token not supported");
+        require(amount > 0, "Amount must be positive");
+        
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        userDeposits[msg.sender][token] += amount;
+        
+        emit Deposit(msg.sender, token, amount, nonce, block.timestamp);
+    }
+    
+    /**
+     * @notice Deposit ETH directly
+     */
+    function depositETH(bytes32 nonce) external payable nonReentrant whenNotPaused {
+        require(msg.value > 0, "Amount must be positive");
+        
+        userDeposits[msg.sender][address(0)] += msg.value;
+        
+        emit DepositETH(msg.sender, msg.value, nonce, block.timestamp);
+    }
+    
+    /**
+     * @notice Withdraw funds to user wallet (operator-only)
+     * @dev Backend validates off-chain, then operator executes
+     */
+    function withdraw(
+        address user,
+        address token,
+        uint256 amount,
+        address toAddress,
+        bytes calldata signature
+    ) external nonReentrant onlyRole(OPERATOR_ROLE) {
+        // Verify user signature (EIP-712)
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            user, token, amount, toAddress, withdrawalNonces[user]
+        ));
+        require(_verifySignature(user, messageHash, signature), "Invalid signature");
+        
+        withdrawalNonces[user]++;
+        
+        if (token == address(0)) {
+            // Withdraw ETH
+            (bool success, ) = toAddress.call{value: amount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            // Withdraw ERC20
+            IERC20(token).safeTransfer(toAddress, amount);
+        }
+        
+        emit Withdrawal(user, token, amount, toAddress, block.timestamp);
+    }
+    
+    /**
+     * @notice Emergency pause by guardian
+     */
+    function emergencyPause(string calldata reason) external onlyRole(GUARDIAN_ROLE) {
+        _pause();
+        emit EmergencyPause(msg.sender, reason);
+    }
+    
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+    
+    function addSupportedToken(address token) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        supportedTokens[token] = true;
+    }
+    
+    function _verifySignature(
+        address signer,
+        bytes32 messageHash,
+        bytes calldata signature
+    ) internal pure returns (bool) {
+        bytes32 ethSignedHash = keccak256(abi.encodePacked(
+            "\x19Ethereum Signed Message:\n32", messageHash
+        ));
+        
+        (bytes32 r, bytes32 s, uint8 v) = _splitSignature(signature);
+        return ecrecover(ethSignedHash, v, r, s) == signer;
+    }
+    
+    function _splitSignature(bytes calldata sig) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "Invalid signature length");
+        
+        assembly {
+            r := calldataload(sig.offset)
+            s := calldataload(add(sig.offset, 32))
+            v := byte(0, calldataload(add(sig.offset, 64)))
+        }
+    }
+    
+    receive() external payable {}
+}
+```
+
+### 21.1.3 DepositRouter Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+
+/**
+ * @title DepositRouter
+ * @notice Helper contract for gas-efficient deposits with permit support
+ */
+contract DepositRouter {
+    ICollateralVault public immutable vault;
+    
+    constructor(address _vault) {
+        vault = ICollateralVault(_vault);
+    }
+    
+    /**
+     * @notice Deposit with EIP-2612 permit (no separate approve tx needed)
+     */
+    function depositWithPermit(
+        address token,
+        uint256 amount,
+        bytes32 nonce,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        IERC20Permit(token).permit(msg.sender, address(vault), amount, deadline, v, r, s);
+        
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(token).approve(address(vault), amount);
+        vault.depositERC20(token, amount, nonce);
+    }
+    
+    /**
+     * @notice Deposit ETH and forward to vault
+     */
+    function depositETH(bytes32 nonce) external payable {
+        vault.depositETH{value: msg.value}(nonce);
+    }
+}
+
+interface ICollateralVault {
+    function depositERC20(address token, uint256 amount, bytes32 nonce) external;
+    function depositETH(bytes32 nonce) external payable;
+}
+```
+
+### 21.1.4 USDC Token Addresses (Per Chain)
+
+```yaml
+# Production USDC Addresses
+Ethereum Mainnet:
+  chainId: 1
+  usdc: "0xA0b86a33E5C9aD1a1fc8B24fa2cFcD9b8c3D5b58"
+  
+Polygon:
+  chainId: 137
+  usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+  
+Arbitrum One:
+  chainId: 42161
+  usdc: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+  
+BSC (BNB Chain):
+  chainId: 56
+  usdc: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+
+# Testnet USDC Addresses (for development)
+Sepolia:
+  chainId: 11155111
+  usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+  
+Polygon Mumbai:
+  chainId: 80001
+  usdc: "0xe11A86849d99F524cAC3E7A0Ec1241828e332C62"
+```
+
+### 21.1.5 Operator Key Management
+
+```yaml
+# Security model for operator keys that can execute withdrawals
+
+Key Types:
+  hot_wallet:
+    purpose: Small automatic withdrawals (<$1000)
+    storage: AWS KMS / GCP Cloud KMS
+    threshold: Single signature
+    limits: $10,000/day
+    
+  warm_wallet:
+    purpose: Medium withdrawals ($1000-$10,000)
+    storage: Hardware Security Module (HSM)
+    threshold: 1-of-2 operators
+    limits: $50,000/day
+    
+  cold_wallet:
+    purpose: Large withdrawals (>$10,000)
+    storage: Air-gapped hardware wallets
+    threshold: 2-of-3 multi-sig
+    limits: Manual review, 24-hour delay
+
+Reconciliation:
+  frequency: Every 15 minutes
+  process:
+    1. Sum on-chain vault balances
+    2. Sum off-chain ledger balances
+    3. Alert if discrepancy > $100 or 0.1%
+  alerts:
+    - Telegram ops channel
+    - PagerDuty for large discrepancies
 ```
 
 ### 21.2 Core Contract Interfaces
@@ -4386,6 +4950,7 @@ Phase 6: Launch Preparation (Weeks 21-22)
 | 2.1 | Nov 28, 2025 | Agent | Added User Profile & Notification APIs (15.7, 15.8), updated Market schema with frontend fields (timeline, sentiment, source, liquidity_tier), added Rate Limiting & Error Handling (22.5), added database tables for user_risk_settings, notification_settings, notification_history |
 | 2.2 | Nov 28, 2025 | Agent | Updated Market API responses to include all frontend Prediction fields (yesPrice, noPrice, timeline, source, sentiment, liquidityTier). Added wallet/state endpoint matching Zustand store structure. Added wallet/chain endpoint for chain selection. |
 | 2.3 | Nov 28, 2025 | Agent | Added risk settings enforcement logic (weekly limit, max position, stop loss checks). Added notification trigger pipeline architecture with event sources and worker details. Added wallet transactions pagination. Added rate limiting enforcement layer with Redis implementation and abuse response workflow. |
+| 3.0 | Nov 28, 2025 | Agent | Major revision: Added complete Web3 Wallet Integration section (21.0). Documented MetaMask/Phantom deposit flows, CollateralVault and DepositRouter smart contracts, off-chain ledger architecture, withdrawal security model with velocity limits and multi-sig requirements, USDC token addresses per chain, and operator key management with HSM/MPC security model. |
 
 ---
 
