@@ -100,19 +100,31 @@ The Technical Architecture Document contains complete specifications for buildin
 - [ ] Admin dashboard
 - [ ] Leaderboards and reporting
 
-## Web3 Wallet Architecture
+## Web3Auth-First Architecture
+- **Primary Auth:** Web3Auth (email/social login + MPC wallet generation)
+- **Secondary Auth:** SIWE for advanced users with existing wallets (Phase 2)
 - **Non-Custodial Wallets:** MetaMask, Phantom, WalletConnect, Coinbase Wallet, Rainbow
 - **Deposit Flow:** Users deposit USDC/ETH from their wallet → CollateralVault smart contract → Off-chain ledger for trading
 - **Supported Chains:** Ethereum, Polygon, Arbitrum, BSC
-- **Phantom/Solana:** Bridged via Wormhole (V2 feature)
 - **Withdrawal Security:** EIP-712 signatures, velocity limits, multi-sig for large amounts, 24-hour time locks
 
 ## Documentation
-- **Technical Architecture Document:** `docs/TECHNICAL_ARCHITECTURE_DOCUMENT.md`
+
+### Backend Architecture Document (Primary)
+- **File:** `docs/BACKEND_ARCHITECTURE_DOCUMENT.md`
+- **Purpose:** Complete backend server implementation guide with Web3Auth-first architecture
+- **Contents:**
+  - Part I: Foundation (Executive Summary, Architecture Overview, Tech Stack, Phases)
+  - Part II: Phase 1 - Core Backend (Auth, Markets, Wallet, Profile, Notifications, Admin)
+  - Part III: Phase 2 - Trading Engine (Orders, Matching, Positions, WebSockets, Workers)
+  - Part IV: Phase 3 - Oracle & On-Chain (Resolution, Smart Contracts, Analytics)
+  - Part V: Infrastructure (Database Schemas, NFRs, DevOps, Acceptance Criteria)
+
+### Technical Architecture Document (Frontend Reference)
+- **File:** `docs/TECHNICAL_ARCHITECTURE_DOCUMENT.md`
   - Part I: Frontend Architecture (Implemented) - Sections 1-13
-  - Part II: Backend Architecture (Planning) - Sections 14-26
+  - Part II: Backend Architecture (Legacy) - Sections 14-26
   - Section 21: Web3 Wallet Integration - CollateralVault, DepositRouter, deposit/withdrawal flows
-  - Includes: API specifications, database schemas, trading engine design, smart contract interfaces, oracle system, real-time infrastructure, admin functions, and implementation roadmap
 
 ## Notes
 - This is a frontend showcase/demo application

@@ -1,0 +1,402 @@
+Below is the **fully rewritten, end-to-end SOW** with **Web3Auth-first** architecture baked in.
+This is a polished, client-ready, engineering-ready document you can send directly to agencies, dev teams, or architects.
+
+---
+
+# **AFRICAPREDICTS – BACKEND / SERVER SCOPE OF WORK (SOW)**
+
+### **Web3Auth-First Architecture**
+
+---
+
+# **1. Project Overview**
+
+**Project Name:** AfricaPredicts Backend & Server Implementation
+**Frontend:** Next.js 13+ application (Predictions Board, Market Detail, Wallet, Profile, Dashboard) currently running on mock data.
+**Goal:** Replace all mock data with a production-grade backend using a Web3Auth-first authentication model and build a complete trading, market, and wallet backend capable of powering both MVP and long-term scaling.
+
+This backend will:
+
+* Authenticate users via Web3Auth (email/social login + MPC wallet).
+* Expose modern REST APIs for markets, orders, trades, positions, notifications, and portfolio.
+* Maintain a secure internal ledger for stablecoin balances.
+* Provide a scalable trading engine and matching logic.
+* Support off-chain settlement first, then optional smart contract integration later.
+* Deliver real-time updates via WebSockets.
+
+---
+
+# **2. Scope of Work (Functional Scope)**
+
+---
+
+## **Phase 1 — Core Backend Foundation (MVP)**
+
+### **Objective:**
+
+Replace all frontend mock data with a real backend that provides auth, markets, user profile, wallet, balances, and simulated trading data.
+
+---
+
+## **2.1 Authentication & Identity (Web3Auth-First)**
+
+**Primary Auth Provider: Web3Auth**
+
+Deliverables:
+
+* Integrate Web3Auth as the core identity system.
+
+  * Email login, social login, passwordless flows supported by Web3Auth.
+  * Web3Auth generates an MPC wallet/address for the user.
+* Backend validates Web3Auth ID tokens using their JWKS keys.
+* Create user in database on first login:
+
+  * `user_id`
+  * `web3auth_user_id`
+  * `wallet_address`
+  * `auth_provider = 'web3auth'`
+* Normalize user session:
+
+  * Backend may issue a short-lived internal JWT or simply trust Web3Auth tokens.
+* Auth middleware is implemented for all protected operations.
+
+**Optional (Phase 2):**
+
+* Add SIWE for advanced users with existing wallets.
+* Hybrid auth allowed: `auth_provider = 'siwe'`.
+
+---
+
+## **2.2 Markets Service (Public)**
+
+Implement the backend equivalent of the mock markets listing.
+
+Endpoints:
+
+* `GET /api/v1/markets`
+
+  * Filters: category, country, status, liquidity tier, sorting, pagination.
+* `GET /api/v1/markets/:slug`
+
+  * Includes pricing, volume, sentiment, timeline, outcome odds, description.
+* `GET /api/v1/markets/:slug/orderbook`
+* `GET /api/v1/markets/:slug/trades`
+* `GET /api/v1/markets/:slug/price-history`
+
+**MVP Reality:**
+
+* Orderbook, trades, and price history may be synthetic (generated server-side).
+* Must use the correct JSON format so frontend integration is seamless.
+
+---
+
+## **2.3 Wallet & Balance Ledger (Backend Wallet System)**
+
+Even with Web3Auth, backend maintains the “centralized ledger” for USDT/USDC for trading.
+
+Endpoints:
+
+* `GET /api/v1/wallet/state`
+
+  * Mirrors frontend’s Zustand wallet store.
+* `GET /api/v1/wallet/balances`
+* `POST /api/v1/wallet/deposit`
+
+  * Creates a deposit intent (MVP may simulate).
+* `POST /api/v1/wallet/withdraw`
+
+  * Creates a withdrawal request with status tracking.
+* `GET /api/v1/wallet/transactions`
+
+Backend responsibilities:
+
+* Maintain internal stablecoin ledger.
+* Enforce idempotent balance updates.
+* Locking mechanism for in-trade funds.
+
+---
+
+## **2.4 User Profile & Risk Settings**
+
+Endpoints:
+
+* `GET /api/v1/users/me`
+* `PATCH /api/v1/users/me`
+* `PATCH /api/v1/users/me/risk-settings`
+* `GET /api/v1/users/:walletAddress/public`
+
+Risk parameters included:
+
+* Max weekly trading limit.
+* Max position size.
+* Auto stop-loss % (enforced by engine or worker).
+
+---
+
+## **2.5 Notification Settings**
+
+Endpoints:
+
+* `GET /api/v1/notifications/settings`
+* `PATCH /api/v1/notifications/settings`
+* `POST /api/v1/notifications/test`
+
+Channels to be supported later:
+Telegram, Email, SMS, In-app.
+
+(MVP: config only.)
+
+---
+
+## **2.6 Minimal Admin APIs**
+
+Endpoints:
+
+* Create/Update markets
+* Activate/Suspend markets
+* Basic analytics summaries
+* Admin auth via role-based permissions
+
+---
+
+# **Phase 2 — Trading Engine, Matching, Real-Time Infrastructure**
+
+### **Objective:**
+
+Enable real trades, order matching, live prices, active positions, and trade history.
+
+---
+
+## **2.7 Trading Engine**
+
+Endpoints:
+
+* `POST /api/v1/orders` (limit orders)
+* `POST /api/v1/orders/market`
+* `GET /api/v1/orders`
+* `DELETE /api/v1/orders/:id`
+
+Backend functionality:
+
+* Full limit order book per market/outcome.
+* FIFO time priority.
+* Match engine generating trades.
+* Balances deducted + locked during order placement.
+* Trade events emitted to Analytics & Notifications.
+
+---
+
+## **2.8 Positions & Settlement (Off-chain)**
+
+Endpoints:
+
+* `GET /api/v1/positions`
+* `GET /api/v1/positions/:marketId`
+* `POST /api/v1/positions/:marketId/claim`
+
+Features:
+
+* Track average entry price, quantity, realized/ unrealized P&L.
+* On market resolution:
+
+  * Auto-calculate payouts.
+  * Credit internal balances.
+  * Lock-out further trades.
+
+---
+
+## **2.9 WebSockets Real-Time Infrastructure**
+
+Deliverables:
+
+* WebSocket server (Socket.io or native WS).
+* Redis-based pub/sub for scalable broadcasting.
+* Channels:
+
+  * `marketPriceUpdate`
+  * `orderBookUpdate`
+  * `recentTradesUpdate`
+  * `marketVolumeUpdate`
+
+Frontend receives live updates without polling.
+
+---
+
+## **2.10 Notification Workers**
+
+* Workers listen for events:
+
+  * Volatility spikes
+  * Market resolution
+  * Order executed
+  * Stop-loss triggered
+* Execute notification channels (Telegram/Email).
+
+---
+
+# **Phase 3 — Oracle, On-Chain Integration, Advanced Ops**
+
+---
+
+## **2.11 Market Resolution Oracle Service**
+
+Deliverables:
+
+* Market expiry scheduler.
+* External data fetchers (API feeds).
+* Dispute mechanism (admin override).
+* Emits settlement signals for trades.
+
+---
+
+## **2.12 Smart Contract Integration (Future)**
+
+* Once prediction market contracts exist:
+
+  * Connect via Viem/ethers.
+  * Handle on-chain deposits/withdrawals.
+  * Read AMM state on-chain.
+  * Write settlement results to smart contract (if design requires).
+* Chain event listeners for deposits/withdrawals/trades.
+
+**Note:**
+This does *not* include contract development.
+This SOW covers integration only.
+
+---
+
+## **2.13 Admin Tools & Analytics**
+
+* Admin REST API for market management.
+* Advanced analytics endpoints:
+
+  * Volume
+  * Liquidity
+  * User P&L
+  * Market performance
+  * Category breakdowns
+* Optional: Grafana/Metabase dashboards.
+
+---
+
+# **3. Technical Architecture**
+
+---
+
+## **3.1 Stack**
+
+* **Language:** TypeScript
+* **Framework:** NestJS
+* **DB:** PostgreSQL
+* **ORM:** Prisma or TypeORM
+* **Cache:** Redis
+* **Jobs:** BullMQ / Redis Queue
+* **Realtime:** WebSockets + Redis
+* **Blockchain:** Viem / ethers
+* **Auth:** Web3Auth
+* **Deployment:** Docker + Kubernetes (or AWS ECS/Fargate)
+* **Monitoring:** DataDog / Grafana
+* **API Docs:** Swagger/OpenAPI
+
+---
+
+# **4. Non-Functional Requirements**
+
+### **Security**
+
+* Token verification via Web3Auth JWKS.
+* Rate limiting per IP + per endpoint.
+* SQL injection & input sanitization enforced.
+* RBAC for admin actions.
+
+### **Performance**
+
+* Sub-200ms p95 on major endpoints.
+* WebSocket event broadcast <1s latency.
+
+### **Reliability**
+
+* Graceful order matching with replay.
+* At-least-once event processing.
+* Idempotent wallet/accounting logic.
+
+### **Scalability**
+
+* Multi-node API servers with shared Redis.
+* Horizontal WebSocket scaling.
+* Sharded matching engine optional for high volume.
+
+---
+
+# **5. DevOps & Environments**
+
+Deliverables:
+
+* Dockerfiles + docker-compose for local.
+* CI pipeline (test, lint, build).
+* Automated DB migrations.
+* Monitoring dashboards (errors, latency, queue depth).
+* **Environments:** dev, staging, prod.
+
+---
+
+# **6. Out of Scope**
+
+* Mobile apps.
+* Fiat on-ramp/off-ramp integration.
+* Smart contract authoring & audits.
+* Advanced market types (multi-outcome, numeric).
+* Full admin UI (beyond minimal endpoints).
+
+---
+
+# **7. Acceptance Criteria**
+
+---
+
+## **Phase 1 Acceptance**
+
+* Web3Auth login works and backend recognizes users.
+* Frontend displays live markets from API (no mock data).
+* Wallet/balance ledger active.
+* Profile & notification settings save to backend.
+
+---
+
+## **Phase 2 Acceptance**
+
+* Users can place orders and see fills.
+* Positions update with realized/unrealized P&L.
+* Real-time price/volume/orderbook working.
+* Notification worker triggers test alerts.
+
+---
+
+## **Phase 3 Acceptance**
+
+* Oracle service resolves markets.
+* Settlement updates positions + balances.
+* Deposit/withdrawal flows support on-chain integration.
+* Analytics endpoints available.
+
+---
+
+# **8. Dependencies & Assumptions**
+
+* Web3Auth credentials provided by client.
+* Market data feeds available for oracle integration.
+* Frontend will adapt to use `/api/v1` endpoints + WS events.
+* Future smart contract addresses delivered before Phase 3 begins.
+
+---
+
+# **SOW Complete**
+
+If you'd like, I can also provide:
+
+✅ A **timeline & effort estimate per phase**
+✅ A **Jira-style task breakdown**
+✅ A **system diagram** or **architecture blueprint**
+✅ A **database schema** for markets, orders, trades, positions, ledger
+
+Just tell me what you want next.
