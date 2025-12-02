@@ -255,3 +255,122 @@ export interface ApiError {
   message: string;
   statusCode: number;
 }
+
+export interface AdminMarketCreate {
+  slug: string;
+  question: string;
+  description: string;
+  category: MarketCategory;
+  currency: CurrencyCode;
+  closesAt: string;
+  yesPrice?: number;
+  noPrice?: number;
+}
+
+export interface AdminMarketUpdate {
+  question?: string;
+  description?: string;
+  status?: MarketStatus;
+  closesAt?: string;
+}
+
+export interface AdminPriceUpdate {
+  yesPrice: number;
+  reason?: string;
+}
+
+export interface ResolutionQueueItem {
+  id: string;
+  slug: string;
+  question: string;
+  category: MarketCategory;
+  currency: CurrencyCode;
+  symbol: string;
+  closesAt: string;
+  closedForHours: number;
+  volume: number;
+  positionCount: number;
+  totalStaked: number;
+  yesStaked: number;
+  noStaked: number;
+  status: string;
+}
+
+export interface ResolutionQueue {
+  count: number;
+  markets: ResolutionQueueItem[];
+}
+
+export interface SettlementStats {
+  marketsAwaitingResolution: number;
+  marketsResolvedToday: number;
+  marketsResolvedThisWeek: number;
+  totalPayoutsToday: number;
+  totalPayoutsThisWeek: number;
+}
+
+export interface SettlementPreviewUser {
+  positionId: string;
+  userId: string;
+  userEmail: string;
+  outcome: 'YES' | 'NO';
+  stake: number;
+  shares: number;
+  payout: number;
+  profit: number;
+}
+
+export interface SettlementPreview {
+  market: {
+    id: string;
+    slug: string;
+    question: string;
+    currency: CurrencyCode;
+    symbol: string;
+  };
+  proposedOutcome: 'YES' | 'NO';
+  summary: {
+    totalPositions: number;
+    winnersCount: number;
+    losersCount: number;
+    totalPayout: number;
+    totalStaked: number;
+  };
+  winners: SettlementPreviewUser[];
+  losers: SettlementPreviewUser[];
+}
+
+export interface AdminDeposit {
+  id: string;
+  userId: string;
+  userEmail?: string;
+  txHash: string;
+  token: string;
+  amount: number;
+  confirmations: number;
+  requiredConfirmations: number;
+  status: 'pending' | 'credited' | 'failed';
+  createdAt: string;
+  creditedAt?: string;
+}
+
+export interface AdminDepositStats {
+  pendingCount: number;
+  pendingVolume: number;
+  creditedToday: number;
+  creditedVolumeToday: number;
+}
+
+export interface AdminWithdrawal {
+  id: string;
+  userId: string;
+  userEmail?: string;
+  token: string;
+  amount: number;
+  toAddress: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  txHash?: string;
+  notes?: string;
+  createdAt: string;
+  completedAt?: string;
+}

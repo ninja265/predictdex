@@ -21,6 +21,15 @@ import type {
   MarketCategory,
   MarketStatus,
   CurrencyCode,
+  AdminMarketCreate,
+  AdminMarketUpdate,
+  AdminPriceUpdate,
+  ResolutionQueue,
+  SettlementStats,
+  SettlementPreview,
+  AdminDeposit,
+  AdminDepositStats,
+  AdminWithdrawal,
 } from './types';
 
 const API_BASE_URL = 'https://sa-api-server-1.replit.app/api/v1';
@@ -273,6 +282,133 @@ class ApiClient {
     return this.request('/users/me/risk-settings', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  }
+
+  async getAdminMarkets(params?: {
+    status?: MarketStatus;
+    category?: MarketCategory;
+    limit?: number;
+    offset?: number;
+  }): Promise<MarketsResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.category) searchParams.set('category', params.category);
+    if (params?.limit !== undefined) searchParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return this.request(`/admin/markets${query ? `?${query}` : ''}`);
+  }
+
+  async createMarket(data: AdminMarketCreate): Promise<Market> {
+    return this.request('/admin/markets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateMarket(id: string, data: AdminMarketUpdate): Promise<Market> {
+    return this.request(`/admin/markets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateMarketPrices(id: string, data: AdminPriceUpdate): Promise<Market> {
+    return this.request(`/admin/markets/${id}/prices`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resolveMarket(id: string, outcome: 'YES' | 'NO', notes?: string): Promise<{ success: boolean }> {
+    return this.request(`/admin/markets/${id}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ outcome, notes }),
+    });
+  }
+
+  async getResolutionQueue(): Promise<ResolutionQueue> {
+    return this.request('/admin/settlement/queue');
+  }
+
+  async getSettlementStats(): Promise<SettlementStats> {
+    return this.request('/admin/settlement/stats');
+  }
+
+  async getSettlementPreview(id: string, outcome: 'YES' | 'NO'): Promise<SettlementPreview> {
+    return this.request(`/admin/settlement/preview/${id}?outcome=${outcome}`);
+  }
+
+  async settleMarket(id: string, outcome: 'YES' | 'NO', notes?: string): Promise<{ success: boolean }> {
+    return this.request(`/admin/settlement/resolve/${id}`, {
+      method: 'POST',
+      body: JSON.stringify({ outcome, notes }),
+    });
+  }
+
+  async triggerSettlementCheck(): Promise<{ success: boolean }> {
+    return this.request('/admin/settlement/trigger-check', {
+      method: 'POST',
+    });
+  }
+
+  async getAdminDeposits(params?: {
+    status?: 'pending' | 'credited' | 'failed';
+    token?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ deposits: AdminDeposit[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.token) searchParams.set('token', params.token);
+    if (params?.limit !== undefined) searchParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return this.request(`/admin/crypto/deposits${query ? `?${query}` : ''}`);
+  }
+
+  async getAdminDepositStats(): Promise<AdminDepositStats> {
+    return this.request('/admin/crypto/deposits/stats');
+  }
+
+  async creditDeposit(id: string): Promise<{ success: boolean }> {
+    return this.request(`/admin/crypto/deposits/${id}/credit`, {
+      method: 'POST',
+    });
+  }
+
+  async getAdminWithdrawals(params?: {
+    status?: 'pending' | 'approved' | 'rejected' | 'completed';
+    limit?: number;
+    offset?: number;
+  }): Promise<{ withdrawals: AdminWithdrawal[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.limit !== undefined) searchParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return this.request(`/admin/crypto/withdrawals${query ? `?${query}` : ''}`);
+  }
+
+  async approveWithdrawal(id: string, notes?: string): Promise<{ success: boolean }> {
+    return this.request(`/admin/crypto/withdrawals/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    });
+  }
+
+  async rejectWithdrawal(id: string, reason: string): Promise<{ success: boolean }> {
+    return this.request(`/admin/crypto/withdrawals/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async completeWithdrawal(id: string, txHash: string): Promise<{ success: boolean }> {
+    return this.request(`/admin/crypto/withdrawals/${id}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ txHash }),
     });
   }
 }

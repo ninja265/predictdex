@@ -64,6 +64,14 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
+              {user?.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="uppercase tracking-widest text-[11px] font-semibold px-3 py-1.5 border border-gold/50 bg-gold/10 text-gold hover:bg-gold/20 transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
               <span className="text-xs text-mist uppercase tracking-widest">
                 {user?.email || user?.walletAddress?.slice(0, 8) + "..."}
               </span>
