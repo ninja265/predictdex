@@ -133,6 +133,38 @@ AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application f
 - Loading states shown for all async operations
 - Graceful fallbacks for missing data
 
+## Testing
+
+### API Health Check
+- Visit `/api/health` to test all API endpoints
+- Returns status for public, authenticated, and admin endpoints
+
+### Admin Audit Tool
+- Navigate to `/admin/audit` (requires admin role)
+- Click "Run Full Audit" to test all endpoints
+- Shows response times, success/failure status
+
+### E2E Tests (Playwright)
+```bash
+# Install Playwright browsers (first time)
+npx playwright install
+
+# Run all tests
+npx playwright test
+
+# Run with UI
+npx playwright test --ui
+
+# Run specific test file
+npx playwright test e2e/flows.spec.ts
+```
+
+### Test Files
+- `e2e/flows.spec.ts` - Main E2E test suite
+- `e2e/README.md` - Testing documentation
+- `lib/api/audit.ts` - API endpoint auditor
+- `app/api/health/route.ts` - Health check endpoint
+
 ## Notes
 - Frontend connected to production API server
 - Trading requires authentication
