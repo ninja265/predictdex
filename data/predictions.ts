@@ -196,10 +196,8 @@ export const countries = [
 
 export const categories = [
   "Politics",
+  "Civics",
   "Sports",
-  "Entertainment",
-  "Business",
-  "Crypto",
-  "Society",
+  "Culture",
 ] as const;
 

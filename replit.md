@@ -1,16 +1,17 @@
 # AfricaPredicts — Pan-African Prediction Exchange
 
 ## Overview
-AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application focused on African narratives. The app features predictions on politics, entertainment, sports, and crypto across the continent. Built with a futuristic, pan-African dark theme aesthetic.
+AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application focused on African narratives. The app features predictions on politics, civics, sports, and culture across the continent. Built with a futuristic, pan-African dark theme aesthetic.
 
-**Status:** Development - Frontend fully functional with mock data
-**Last Updated:** November 28, 2025
+**Status:** Development - Frontend connected to production API
+**Last Updated:** December 2, 2025
 
 ## Tech Stack
 - **Framework:** Next.js 13 (App Router) + React 18
 - **Styling:** Tailwind CSS with custom pan-African theme (royal blue, gold, dark backgrounds)
-- **State Management:** Zustand
+- **State Management:** Zustand (auth store, toast notifications)
 - **Web3:** Wagmi + RainbowKit for wallet connectivity (MetaMask, WalletConnect)
+- **API:** Connected to NestJS backend at https://sa-api-server-1.replit.app/api/v1
 - **Blockchain:** Supports Ethereum, Polygon, Arbitrum, and BSC chains
 - **Typography:** Inter & DM Sans fonts
 
@@ -18,21 +19,32 @@ AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application f
 ```
 ├── app/                    # Next.js App Router pages
 │   ├── page.tsx           # Landing page with hero and top predictions
+│   ├── login/             # Email OTP + Wallet SIWE login
 │   ├── markets/           # Markets directory and detail pages
-│   ├── wallet/            # Wallet dashboard
-│   ├── account/           # User account page
-│   ├── country/[country]/ # Dynamic country-specific pages
+│   ├── wallet/            # Wallet dashboard (balances, portfolio, deposits)
+│   ├── account/           # User profile and settings
 │   └── category/[category]/ # Dynamic category-specific pages
 ├── components/            # Reusable UI components
-│   ├── Navbar.tsx         # Main navigation
-│   ├── PredictionsBoard.tsx # Markets grid display
-│   ├── PredictionCard.tsx  # Individual market card
-│   ├── ConnectWalletButton.tsx # Web3 wallet connection
-│   └── ...
-├── data/
-│   └── predictions.ts     # Mock market data
-└── lib/stores/
-    └── useWalletStore.ts  # Zustand wallet state
+│   ├── Navbar.tsx         # Main navigation with auth state
+│   ├── MarketsBoard.tsx   # API-connected markets grid
+│   ├── MarketCard.tsx     # Individual market card
+│   ├── MarketDetail.tsx   # Market detail with trading form
+│   ├── MarketOrderBook.tsx # Live order book (YES/NO toggle)
+│   ├── WalletDashboard.tsx # Balances, portfolio, crypto deposits
+│   └── Toast.tsx          # Global toast notifications
+├── lib/
+│   ├── api/
+│   │   ├── client.ts      # API client with auth token handling
+│   │   └── types.ts       # TypeScript types for API responses
+│   ├── hooks/
+│   │   ├── useMarkets.ts  # Markets, market detail, order book hooks
+│   │   ├── useTrading.ts  # Trade preview and execution
+│   │   ├── useWallet.ts   # Balances, transactions, portfolio, deposits
+│   │   └── useProfile.ts  # User profile management
+│   └── stores/
+│       └── useAuthStore.ts # Auth state (OTP, SIWE, logout)
+└── data/
+    └── predictions.ts     # Categories list (fallback)
 ```
 
 ## Replit Configuration
@@ -49,86 +61,65 @@ AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application f
 - **Start:** `npm start`
 - **Port:** 5000
 
+## API Integration
+
+### Backend API
+- **Base URL:** https://sa-api-server-1.replit.app/api/v1
+- **Authentication:** JWT tokens (stored in localStorage)
+- **Auth Methods:** 
+  - Email OTP (POST /auth/request-otp, POST /auth/verify-otp)
+  - Wallet SIWE (POST /auth/wallet/challenge, POST /auth/wallet/verify)
+
+### API Endpoints Used
+- Markets: GET /markets, GET /markets/:slug, GET /markets/:slug/orderbook
+- Trading: POST /trade/preview, POST /trade/buy, POST /trade/sell
+- Portfolio: GET /portfolio, GET /portfolio/history
+- Wallet: GET /wallet/balances, GET /wallet/transactions
+- Crypto: GET /crypto/deposit-addresses, GET /crypto/deposits/pending
+- Users: GET /users/me, PATCH /users/me
+
+### Categories
+- Politics, Civics, Sports, Culture
+
+### Supported Currencies
+- Primary: ETH, USDC, USDT
+- Fiat currencies hidden in UI (deferred to later phase)
+
 ## Key Features
-✅ Immersive landing page with top 10 predictions
-✅ Markets directory with country and category filtering
-✅ Dedicated market detail pages with order book and trade forms
-✅ Web3 wallet integration (RainbowKit)
-✅ Wallet dashboard with mock deposit/withdrawal flows
-✅ Dynamic routing for countries and categories
+✅ Email OTP and Wallet SIWE authentication
+✅ Markets listing from production API
+✅ Market detail pages with live order book (YES/NO toggle)
+✅ Trading form with price preview and execution
+✅ Wallet dashboard with balances, portfolio, crypto deposits
+✅ User profile management
+✅ Toast notifications for errors and success messages
+✅ Auth-protected routes (Wallet, Account)
 ✅ Pan-African dark theme with geometric patterns
 
-## Data Model
-All data is currently mocked in `data/predictions.ts` for demonstration purposes. Each prediction includes:
-- Title, description, category
-- Country/region tags
-- Sentiment indicators (YES/NO probabilities)
-- Liquidity metrics
-- Resolution dates
+## Authentication Flow
 
-## Environment Variables
-Optional:
-- `NEXT_PUBLIC_WALLETCONNECT_ID` - WalletConnect project ID (defaults to "demo" if not set)
+### Email OTP
+1. User enters email → POST /auth/request-otp
+2. User receives OTP code via email
+3. User enters code → POST /auth/verify-otp
+4. JWT token stored, user redirected to /markets
 
-## Backend Development Roadmap
-The Technical Architecture Document contains complete specifications for building the production backend:
+### Wallet SIWE
+1. User connects wallet via RainbowKit
+2. POST /auth/wallet/challenge to get message
+3. User signs message with wallet
+4. POST /auth/wallet/verify with signature
+5. JWT token stored, user redirected to /markets
 
-### Phase 1: Core Backend (Weeks 3-6)
-- [ ] NestJS API scaffold with SIWE authentication
-- [ ] User management and session handling
-- [ ] Market CRUD APIs (migrate from mock data)
-- [ ] Basic wallet deposit/withdrawal APIs
-
-### Phase 2: Trading Engine (Weeks 7-10)
-- [ ] Order matching engine with price-time priority
-- [ ] Order book management (Redis)
-- [ ] AMM integration for instant trades
-- [ ] Real-time WebSocket events
-
-### Phase 3: Smart Contracts (Weeks 11-14)
-- [ ] MarketFactory, OutcomeAMM, CollateralVault contracts
-- [ ] Testnet deployment and integration
-- [ ] Security audit
-
-### Phase 4: Oracle & Resolution (Weeks 15-17)
-- [ ] Oracle service with Chainlink integration
-- [ ] Dispute resolution system
-- [ ] Settlement and claims processing
-
-### Phase 5: Analytics & Admin (Weeks 18-20)
-- [ ] Analytics data pipeline
-- [ ] Admin dashboard
-- [ ] Leaderboards and reporting
-
-## Web3Auth-First Architecture
-- **Primary Auth:** Web3Auth (email/social login + MPC wallet generation)
-- **Secondary Auth:** SIWE for advanced users with existing wallets (Phase 2)
-- **Non-Custodial Wallets:** MetaMask, Phantom, WalletConnect, Coinbase Wallet, Rainbow
-- **Deposit Flow:** Users deposit USDC/ETH from their wallet → CollateralVault smart contract → Off-chain ledger for trading
-- **Supported Chains:** Ethereum, Polygon, Arbitrum, BSC
-- **Withdrawal Security:** EIP-712 signatures, velocity limits, multi-sig for large amounts, 24-hour time locks
-
-## Documentation
-
-### Backend Architecture Document (Primary)
-- **File:** `docs/BACKEND_ARCHITECTURE_DOCUMENT.md`
-- **Purpose:** Complete backend server implementation guide with Web3Auth-first architecture
-- **Contents:**
-  - Part I: Foundation (Executive Summary, Architecture Overview, Tech Stack, Phases)
-  - Part II: Phase 1 - Core Backend (Auth, Markets, Wallet, Profile, Notifications, Admin)
-  - Part III: Phase 2 - Trading Engine (Orders, Matching, Positions, WebSockets, Workers)
-  - Part IV: Phase 3 - Oracle & On-Chain (Resolution, Smart Contracts, Analytics)
-  - Part V: Infrastructure (Database Schemas, NFRs, DevOps, Acceptance Criteria)
-
-### Technical Architecture Document (Frontend Reference)
-- **File:** `docs/TECHNICAL_ARCHITECTURE_DOCUMENT.md`
-  - Part I: Frontend Architecture (Implemented) - Sections 1-13
-  - Part II: Backend Architecture (Legacy) - Sections 14-26
-  - Section 21: Web3 Wallet Integration - CollateralVault, DepositRouter, deposit/withdrawal flows
+## Error Handling
+- API errors displayed via Toast component
+- 401 errors trigger automatic logout and redirect to /login
+- Loading states shown for all async operations
+- Graceful fallbacks for missing data
 
 ## Notes
-- This is a frontend showcase/demo application
-- All trading functionality uses mock data
-- Wallet connections work but don't execute real transactions
-- Designed for investor previews and partnership demos
+- Frontend connected to production API server
+- Trading requires authentication
+- Wallet deposit addresses generated per-user
+- Crypto deposits only (fiat deferred)
 - Optimized for Replit's iframe preview environment

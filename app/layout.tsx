@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ToastContainer from "@/components/Toast";
 
 export const metadata: Metadata = {
   title: "AfricaPredicts — Pan-African Prediction DEX",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1 px-6 py-10 lg:px-16">{children}</main>
             <Footer />
           </div>
+          <ToastContainer />
         </Providers>
       </body>
     </html>

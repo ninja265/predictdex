@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import PredictionsBoard from "@/components/PredictionsBoard";
+import MarketsBoard from "@/components/MarketsBoard";
 import { categories } from "@/data/predictions";
+import type { MarketCategory } from "@/lib/api/types";
 
 type Props = {
   params: {
@@ -15,7 +16,9 @@ export function generateStaticParams() {
 }
 
 export default function CategoryPage({ params }: Props) {
-  const match = categories.find((category) => category.toLowerCase() === params.category.toLowerCase());
+  const match = categories.find(
+    (category) => category.toLowerCase() === params.category.toLowerCase()
+  ) as MarketCategory | undefined;
 
   if (!match) {
     notFound();
@@ -27,16 +30,31 @@ export default function CategoryPage({ params }: Props) {
         <p className="text-xs uppercase tracking-[0.4em] text-gold">Category</p>
         <h1 className="mt-4 text-4xl font-semibold text-white">{match}</h1>
         <p className="mt-3 text-sm text-mist">
-          From rate cuts to celebrity drops, {match} markets capture pan-African sentiment.
+          {getCategoryDescription(match)}
         </p>
       </header>
 
-      <PredictionsBoard
+      <MarketsBoard
         title={`${match} Markets`}
-        description="URL-powered filters ensure this board spotlights the narratives you care about."
-        showFilters
+        description="Real-time predictions updated as liquidity moves."
+        showFilters={false}
         initialCategory={match}
       />
     </div>
   );
+}
+
+function getCategoryDescription(category: MarketCategory): string {
+  switch (category) {
+    case "Politics":
+      return "Elections, governance, and policy decisions across the African continent.";
+    case "Civics":
+      return "Civil society, social movements, and community developments.";
+    case "Sports":
+      return "Football, athletics, and sporting events across Africa.";
+    case "Culture":
+      return "Arts, entertainment, and cultural phenomena shaping the continent.";
+    default:
+      return "Markets capturing pan-African narratives.";
+  }
 }

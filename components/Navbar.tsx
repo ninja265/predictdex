@@ -1,19 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import ConnectWalletButton from "./ConnectWalletButton";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/stores/useAuthStore";
+import { useEffect } from "react";
 
 const links = [
   { href: "/markets", label: "Markets" },
   { href: "/country/nigeria", label: "Countries" },
   { href: "/category/politics", label: "Categories" },
-  { href: "/wallet", label: "Wallet" },
-  { href: "/account", label: "Account" },
+  { href: "/wallet", label: "Wallet", protected: true },
+  { href: "/account", label: "Account", protected: true },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isAuthenticated, logout, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
+  };
+
+  const visibleLinks = links.filter(
+    (link) => !link.protected || isAuthenticated
+  );
 
   return (
     <header className="sticky top-0 z-50 bg-night/95 backdrop-blur border-b border-white/5">
@@ -29,7 +45,7 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm uppercase tracking-[0.25em] lg:flex">
-          {links.map((link) => {
+          {visibleLinks.map((link) => {
             const isActive = pathname.startsWith(link.href);
             return (
               <Link
@@ -46,10 +62,28 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <ConnectWalletButton />
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-mist uppercase tracking-widest">
+                {user?.email || user?.walletAddress?.slice(0, 8) + "..."}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="uppercase tracking-widest text-[11px] font-semibold px-4 py-2 border border-white/20 bg-white/5 hover:bg-red-500/20 hover:border-red-500/50 transition-colors text-mist hover:text-white"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="uppercase tracking-widest text-[11px] font-semibold px-4 py-2 border border-royal/50 bg-royal/10 hover:bg-royal/20 transition-colors text-gold"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>
   );
 }
-
