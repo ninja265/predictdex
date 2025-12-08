@@ -49,3 +49,8 @@ externalPort = 3001
 deploymentTarget = "autoscale"
 run = ["npm", "start"]
 build = ["npm", "run", "build"]
+
+[userenv]
+
+[userenv.shared]
+NEXT_PUBLIC_WALLETCONNECT_ID = "ad5430505e81b8a112c85ab079f48f18"
