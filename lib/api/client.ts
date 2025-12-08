@@ -105,7 +105,7 @@ class ApiClient {
   async getWalletChallenge(address: string): Promise<SiweChallenge> {
     return this.request('/auth/wallet/challenge', {
       method: 'POST',
-      body: JSON.stringify({ address }),
+      body: JSON.stringify({ walletAddress: address }),
     });
   }
 
