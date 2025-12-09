@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useAdminMarkets } from "@/lib/hooks/useAdmin";
+import { useCountries } from "@/lib/hooks/useCountries";
 import { toast } from "@/components/Toast";
-import type { MarketStatus, MarketCategory, AdminMarketCreate } from "@/lib/api/types";
+import type { MarketStatus, MarketCategory, AdminMarketCreate, Country } from "@/lib/api/types";
 
 const CATEGORIES: MarketCategory[] = ["Politics", "Civics", "Sports", "Culture"];
 const STATUSES: MarketStatus[] = ["draft", "open", "closed", "resolved"];
@@ -118,6 +119,9 @@ export default function AdminMarketsPage() {
                     </span>
                     <span className="text-xs text-mist">{market.category}</span>
                     <span className="text-xs text-mist">{market.currency}</span>
+                    {market.countryCode && (
+                      <span className="text-xs text-mist">{market.countryName || market.countryCode}</span>
+                    )}
                   </div>
                   <h3 className="text-white font-medium">{market.question}</h3>
                   <p className="text-xs text-mist mt-2">
@@ -194,15 +198,25 @@ function CreateMarketModal({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [closesAtLocal, setClosesAtLocal] = useState("");
+  const { countries } = useCountries();
   const [formData, setFormData] = useState<Omit<AdminMarketCreate, "closesAt">>({
     slug: "",
     question: "",
     description: "",
     category: "Politics",
     currency: "USDC",
+    countryCode: "",
     yesPrice: 0.5,
     noPrice: 0.5,
   });
+
+  // Group countries by region
+  const regionGroups = countries.reduce((acc, country) => {
+    const region = country.region || "Other";
+    if (!acc[region]) acc[region] = [];
+    acc[region].push(country);
+    return acc;
+  }, {} as Record<string, Country[]>);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,6 +238,7 @@ function CreateMarketModal({
       category: formData.category,
       currency: formData.currency,
       closesAt: parsedDate.toISOString(),
+      countryCode: formData.countryCode || undefined,
     };
     await onSubmit(payload);
     setIsSubmitting(false);
@@ -303,6 +318,27 @@ function CreateMarketModal({
                 <option value="USDT">USDT</option>
               </select>
             </div>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-mist mb-2">
+              Country <span className="text-mist/60 normal-case">(Optional)</span>
+            </label>
+            <select
+              value={formData.countryCode}
+              onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 px-3 py-2 text-white focus:border-gold focus:outline-none"
+            >
+              <option value="">— Select Country —</option>
+              {Object.entries(regionGroups).map(([region, regionCountries]) => (
+                <optgroup key={region} label={region} className="bg-charcoal">
+                  {regionCountries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.flagEmoji} {country.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs uppercase tracking-widest text-mist mb-2">

@@ -31,6 +31,8 @@ export interface Market {
   createdAt?: string;
   resolvedAt?: string | null;
   winningOutcome?: 'YES' | 'NO' | null;
+  countryCode?: string;
+  countryName?: string;
 }
 
 export interface MarketsResponse {
@@ -267,6 +269,7 @@ export interface AdminMarketCreate {
   closesAt: string;
   yesPrice?: number;
   noPrice?: number;
+  countryCode?: string;
 }
 
 export interface AdminMarketUpdate {
