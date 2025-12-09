@@ -3,11 +3,20 @@
 import { useParams } from "next/navigation";
 import MarketsBoard from "@/components/MarketsBoard";
 
+const COUNTRY_NAMES: Record<string, string> = {
+  NG: "Nigeria", ZA: "South Africa", GH: "Ghana", KE: "Kenya",
+  UG: "Uganda", TZ: "Tanzania", MA: "Morocco", EG: "Egypt",
+  ET: "Ethiopia", RW: "Rwanda", SN: "Senegal", CI: "Ivory Coast",
+  CM: "Cameroon", DZ: "Algeria", TN: "Tunisia", AO: "Angola",
+  ZW: "Zimbabwe", MW: "Malawi", ZM: "Zambia", BW: "Botswana"
+};
+
 export default function CountryPage() {
   const params = useParams();
   const country = params.country as string;
+  const upperCountry = country.toUpperCase();
 
-  const countryDisplay = country
+  const countryDisplay = COUNTRY_NAMES[upperCountry] || country
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
