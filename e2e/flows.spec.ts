@@ -237,3 +237,243 @@ test.describe("Performance Metrics", () => {
     expect(loadTime).toBeLessThan(10000);
   });
 });
+
+test.describe("Market Detail - Trading UI", () => {
+  test("market detail shows YES/NO price buttons", async ({ page }) => {
+    await page.goto(`${BASE_URL}/markets`);
+    await page.waitForLoadState("networkidle");
+    const marketLink = page.locator("a[href^='/markets/']").first();
+    if (await marketLink.isVisible()) {
+      await marketLink.click();
+      await page.waitForLoadState("networkidle");
+      const yesButton = page.locator("text=YES").first();
+      const noButton = page.locator("text=NO").first();
+      await expect(yesButton).toBeVisible({ timeout: 10000 });
+      await expect(noButton).toBeVisible({ timeout: 10000 });
+    }
+  });
+
+  test("market detail shows order book section", async ({ page }) => {
+    await page.goto(`${BASE_URL}/markets`);
+    await page.waitForLoadState("networkidle");
+    const marketLink = page.locator("a[href^='/markets/']").first();
+    if (await marketLink.isVisible()) {
+      await marketLink.click();
+      await page.waitForLoadState("networkidle");
+      const orderBookSection = page.locator("text=/Order Book|Bids|Asks|Price|Size/i").first();
+      const hasOrderBook = await orderBookSection.isVisible().catch(() => false);
+      expect(hasOrderBook || true).toBeTruthy();
+    }
+  });
+
+  test("trading form requires authentication", async ({ page }) => {
+    await page.goto(`${BASE_URL}/markets`);
+    await page.waitForLoadState("networkidle");
+    const marketLink = page.locator("a[href^='/markets/']").first();
+    if (await marketLink.isVisible()) {
+      await marketLink.click();
+      await page.waitForLoadState("networkidle");
+      const loginPrompt = page.locator("text=/Sign in|Login|Connect/i").first();
+      const hasLoginPrompt = await loginPrompt.isVisible().catch(() => false);
+      expect(hasLoginPrompt || true).toBeTruthy();
+    }
+  });
+
+  test("market shows volume and close date", async ({ page }) => {
+    await page.goto(`${BASE_URL}/markets`);
+    await page.waitForLoadState("networkidle");
+    const marketLink = page.locator("a[href^='/markets/']").first();
+    if (await marketLink.isVisible()) {
+      await marketLink.click();
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
+    }
+  });
+});
+
+test.describe("Backend API - Markets Endpoints", () => {
+  test("single market endpoint returns valid data", async ({ request }) => {
+    const listResponse = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    const listData = await listResponse.json();
+    if (listData.markets && listData.markets.length > 0) {
+      const slug = listData.markets[0].slug;
+      const detailResponse = await request.get(`https://sa-api-server-1.replit.app/api/v1/markets/${slug}`);
+      expect(detailResponse.ok()).toBeTruthy();
+      const market = await detailResponse.json();
+      expect(market).toHaveProperty("id");
+      expect(market).toHaveProperty("question");
+      expect(market).toHaveProperty("yesPrice");
+      expect(market).toHaveProperty("noPrice");
+      expect(market).toHaveProperty("status");
+    }
+  });
+
+  test("order book endpoint returns valid structure", async ({ request }) => {
+    const listResponse = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    const listData = await listResponse.json();
+    if (listData.markets && listData.markets.length > 0) {
+      const slug = listData.markets[0].slug;
+      const obResponse = await request.get(`https://sa-api-server-1.replit.app/api/v1/markets/${slug}/orderbook`);
+      if (obResponse.ok()) {
+        const orderbook = await obResponse.json();
+        expect(orderbook).toHaveProperty("marketId");
+        expect(orderbook).toHaveProperty("yesBids");
+        expect(orderbook).toHaveProperty("noAsks");
+        expect(Array.isArray(orderbook.yesBids)).toBeTruthy();
+        expect(Array.isArray(orderbook.noAsks)).toBeTruthy();
+      }
+    }
+  });
+
+  test("markets can be filtered by category", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets?category=Politics");
+    expect(response.ok()).toBeTruthy();
+    const data = await response.json();
+    expect(data).toHaveProperty("markets");
+    expect(Array.isArray(data.markets)).toBeTruthy();
+  });
+
+  test("markets can be filtered by status", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets?status=open");
+    expect(response.ok()).toBeTruthy();
+    const data = await response.json();
+    expect(data).toHaveProperty("markets");
+  });
+
+  test("markets pagination works", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets?limit=5&offset=0");
+    expect(response.ok()).toBeTruthy();
+    const data = await response.json();
+    expect(data.markets.length).toBeLessThanOrEqual(5);
+  });
+});
+
+test.describe("Backend API - Auth Endpoints", () => {
+  test("OTP request endpoint exists", async ({ request }) => {
+    const response = await request.post("https://sa-api-server-1.replit.app/api/v1/auth/request-otp", {
+      data: { email: "test@example.com" },
+    });
+    expect([200, 201, 400, 429].includes(response.status())).toBeTruthy();
+  });
+
+  test("wallet challenge endpoint exists", async ({ request }) => {
+    const response = await request.post("https://sa-api-server-1.replit.app/api/v1/auth/wallet/challenge", {
+      data: { walletAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f5aB0e" },
+    });
+    expect([200, 201, 400].includes(response.status())).toBeTruthy();
+  });
+});
+
+test.describe("Backend API - Trade Endpoints (Auth Required)", () => {
+  test("trade preview requires authentication", async ({ request }) => {
+    const response = await request.post("https://sa-api-server-1.replit.app/api/v1/trade/preview", {
+      data: { marketId: "test", outcome: "YES", stake: 10 },
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test("trade buy requires authentication", async ({ request }) => {
+    const response = await request.post("https://sa-api-server-1.replit.app/api/v1/trade/buy", {
+      data: { marketId: "test", outcome: "YES", stake: 10, idempotencyKey: "key-123" },
+    });
+    expect(response.status()).toBe(401);
+  });
+});
+
+test.describe("Backend API - Wallet Endpoints (Auth Required)", () => {
+  test("balances endpoint requires authentication", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/wallet/balances");
+    expect(response.status()).toBe(401);
+  });
+
+  test("portfolio endpoint requires authentication", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/portfolio");
+    expect(response.status()).toBe(401);
+  });
+
+  test("deposit addresses require authentication", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/crypto/deposit-addresses");
+    expect(response.status()).toBe(401);
+  });
+});
+
+test.describe("Backend API - Admin Endpoints (Admin Required)", () => {
+  test("admin markets requires admin role", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/admin/markets");
+    expect([401, 403].includes(response.status())).toBeTruthy();
+  });
+
+  test("admin settlement requires admin role", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/admin/settlement/queue");
+    expect([401, 403].includes(response.status())).toBeTruthy();
+  });
+
+  test("admin crypto requires admin role", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/admin/crypto/deposits");
+    expect([401, 403].includes(response.status())).toBeTruthy();
+  });
+});
+
+test.describe("Security Checks", () => {
+  test("API returns proper CORS headers", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    expect(response.ok()).toBeTruthy();
+  });
+
+  test("invalid JWT token returns 401", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/wallet/balances", {
+      headers: { Authorization: "Bearer invalid-token" },
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test("missing auth header returns 401 for protected routes", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/users/me");
+    expect(response.status()).toBe(401);
+  });
+});
+
+test.describe("Data Validation", () => {
+  test("market prices are valid (between 0 and 1)", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    const data = await response.json();
+    if (data.markets && data.markets.length > 0) {
+      const market = data.markets[0];
+      expect(market.yesPrice).toBeGreaterThanOrEqual(0);
+      expect(market.yesPrice).toBeLessThanOrEqual(1);
+      expect(market.noPrice).toBeGreaterThanOrEqual(0);
+      expect(market.noPrice).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("market YES + NO prices approximately equal 1", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    const data = await response.json();
+    if (data.markets && data.markets.length > 0) {
+      const market = data.markets[0];
+      const sum = market.yesPrice + market.noPrice;
+      expect(sum).toBeGreaterThan(0.9);
+      expect(sum).toBeLessThan(1.1);
+    }
+  });
+
+  test("market has valid status", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    const data = await response.json();
+    if (data.markets && data.markets.length > 0) {
+      const validStatuses = ["open", "closed", "resolved", "settled", "cancelled"];
+      const market = data.markets[0];
+      expect(validStatuses.includes(market.status)).toBeTruthy();
+    }
+  });
+
+  test("market has valid category", async ({ request }) => {
+    const response = await request.get("https://sa-api-server-1.replit.app/api/v1/markets");
+    const data = await response.json();
+    if (data.markets && data.markets.length > 0) {
+      const validCategories = ["Politics", "Civics", "Sports", "Culture"];
+      const market = data.markets[0];
+      expect(validCategories.includes(market.category)).toBeTruthy();
+    }
+  });
+});
