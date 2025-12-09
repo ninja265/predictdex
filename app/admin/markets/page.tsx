@@ -209,13 +209,22 @@ function CreateMarketModal({
     if (!closesAtLocal) return;
     
     setIsSubmitting(true);
+    
+    // datetime-local gives format: "2025-12-17T15:29"
+    // We need ISO 8601: "2025-12-17T15:29:00.000Z"
+    // Append :00.000Z if missing seconds/timezone
+    let isoDate = closesAtLocal;
+    if (!isoDate.includes(':00.')) {
+      isoDate = `${closesAtLocal}:00.000Z`;
+    }
+    
     const payload: AdminMarketCreate = {
       slug: formData.slug,
       question: formData.question,
       description: formData.description,
       category: formData.category,
       currency: formData.currency,
-      closesAt: new Date(closesAtLocal).toISOString(),
+      closesAt: isoDate,
     };
     console.log("Creating market with payload:", payload);
     await onSubmit(payload);
