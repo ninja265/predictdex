@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
@@ -10,4 +10,6 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   collectCoverageFrom: ['lib/**/*.ts', '!lib/**/*.d.ts'],
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/__tests__/setup.ts'],
 };
