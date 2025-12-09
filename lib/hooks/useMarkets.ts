@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import apiClient from "@/lib/api/client";
 import { normalizeListResponse } from "@/lib/api/responseHelpers";
 import type { Market, MarketCategory, OrderBookResponse, TradesResponse } from "@/lib/api/types";
+
+// Simple in-memory cache with 30-second TTL
+const marketsCache = new Map<string, { data: Market[]; total: number; timestamp: number }>();
+const CACHE_TTL = 30 * 1000; // 30 seconds
 
 interface UseMarketsParams {
   category?: MarketCategory | null;
@@ -21,12 +25,25 @@ interface UseMarketsReturn {
 }
 
 export function useMarkets({ category, country, limit = 20, offset = 0 }: UseMarketsParams = {}): UseMarketsReturn {
-  const [markets, setMarkets] = useState<Market[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = `${category || ''}-${country || ''}-${limit}-${offset}`;
+  const cached = marketsCache.get(cacheKey);
+  const isFresh = cached && (Date.now() - cached.timestamp) < CACHE_TTL;
+  
+  const [markets, setMarkets] = useState<Market[]>(isFresh ? cached.data : []);
+  const [total, setTotal] = useState(isFresh ? cached.total : 0);
+  const [isLoading, setIsLoading] = useState(!isFresh);
   const [error, setError] = useState<string | null>(null);
+  const hasFetched = useRef(false);
 
-  const fetchMarkets = useCallback(async () => {
+  const fetchMarkets = useCallback(async (force = false) => {
+    const currentCache = marketsCache.get(cacheKey);
+    const stillFresh = currentCache && (Date.now() - currentCache.timestamp) < CACHE_TTL;
+    
+    // Skip fetch if cache is fresh and not forced
+    if (stillFresh && !force && hasFetched.current) {
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     try {
@@ -44,6 +61,11 @@ export function useMarkets({ category, country, limit = 20, offset = 0 }: UseMar
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
       });
+      
+      // Update cache
+      marketsCache.set(cacheKey, { data: sorted, total: totalCount, timestamp: Date.now() });
+      hasFetched.current = true;
+      
       setMarkets(sorted);
       setTotal(totalCount);
     } catch (err) {
@@ -52,13 +74,13 @@ export function useMarkets({ category, country, limit = 20, offset = 0 }: UseMar
     } finally {
       setIsLoading(false);
     }
-  }, [category, country, limit, offset]);
+  }, [category, country, limit, offset, cacheKey]);
 
   useEffect(() => {
     fetchMarkets();
   }, [fetchMarkets]);
 
-  return { markets, total, isLoading, error, refetch: fetchMarkets };
+  return { markets, total, isLoading, error, refetch: () => fetchMarkets(true) };
 }
 
 interface UseMarketReturn {
