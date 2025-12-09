@@ -197,26 +197,26 @@ export default function MarketDetail({ market }: Props) {
                   <>
                     <div className="flex items-center justify-between">
                       <span>You receive</span>
-                      <span className="text-white">{preview.shares.toFixed(2)} shares</span>
+                      <span className="text-white">{(preview.shares ?? 0).toFixed(2)} shares</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Fee</span>
-                      <span className="text-white">{market.symbol}{preview.fee.toFixed(2)}</span>
+                      <span className="text-white">{market.symbol}{(preview.fee ?? 0).toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Total cost</span>
-                      <span className="text-white">{market.symbol}{preview.totalCost.toFixed(2)}</span>
+                      <span className="text-white">{market.symbol}{(preview.totalCost ?? 0).toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between border-t border-white/10 pt-3">
                       <span>Est. payout if {direction}</span>
                       <span className="text-gold font-semibold">
-                        {market.symbol}{preview.estimatedPayout.toFixed(2)}
+                        {market.symbol}{(preview.estimatedPayout ?? 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Est. profit</span>
-                      <span className={`font-semibold ${preview.estimatedProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        {preview.estimatedProfit >= 0 ? "+" : ""}{market.symbol}{preview.estimatedProfit.toFixed(2)}
+                      <span className={`font-semibold ${(preview.estimatedProfit ?? 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {(preview.estimatedProfit ?? 0) >= 0 ? "+" : ""}{market.symbol}{(preview.estimatedProfit ?? 0).toFixed(2)}
                       </span>
                     </div>
                   </>

@@ -2,6 +2,7 @@
 
 import { useMarket } from "@/lib/hooks/useMarkets";
 import MarketDetail from "@/components/MarketDetail";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Link from "next/link";
 
 type Props = {
@@ -10,8 +11,8 @@ type Props = {
   };
 };
 
-export default function MarketDetailPage({ params }: Props) {
-  const { market, isLoading, error } = useMarket(params.slug);
+function MarketDetailContent({ slug }: { slug: string }) {
+  const { market, isLoading, error } = useMarket(slug);
 
   if (isLoading) {
     return (
@@ -46,4 +47,12 @@ export default function MarketDetailPage({ params }: Props) {
   }
 
   return <MarketDetail market={market} />;
+}
+
+export default function MarketDetailPage({ params }: Props) {
+  return (
+    <ErrorBoundary>
+      <MarketDetailContent slug={params.slug} />
+    </ErrorBoundary>
+  );
 }
