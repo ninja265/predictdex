@@ -7,6 +7,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthReady: boolean;
   error: string | null;
   
   setUser: (user: User | null) => void;
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      isAuthReady: false,
       error: null,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -54,7 +56,8 @@ export const useAuthStore = create<AuthState>()(
           set({ 
             user: response.user, 
             isAuthenticated: true, 
-            isLoading: false 
+            isLoading: false,
+            isAuthReady: true
           });
           return true;
         } catch (error) {
@@ -75,7 +78,8 @@ export const useAuthStore = create<AuthState>()(
           set({ 
             user: response.user, 
             isAuthenticated: true, 
-            isLoading: false 
+            isLoading: false,
+            isAuthReady: true
           });
           return true;
         } catch (error) {
@@ -88,7 +92,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        set({ isLoading: true });
+        set({ isLoading: true, isAuthReady: false });
         try {
           await apiClient.logout();
         } catch (error) {
@@ -97,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
             user: null, 
             isAuthenticated: false, 
             isLoading: false,
+            isAuthReady: true,
             error: null 
           });
         }
@@ -113,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
         }
         
         if (!token) {
-          set({ user: null, isAuthenticated: false, isLoading: false });
+          set({ user: null, isAuthenticated: false, isLoading: false, isAuthReady: true });
           return;
         }
 
@@ -123,14 +128,16 @@ export const useAuthStore = create<AuthState>()(
           set({ 
             user: response.user, 
             isAuthenticated: true, 
-            isLoading: false 
+            isLoading: false,
+            isAuthReady: true
           });
         } catch (error) {
           apiClient.setToken(null);
           set({ 
             user: null, 
             isAuthenticated: false, 
-            isLoading: false 
+            isLoading: false,
+            isAuthReady: true
           });
         }
       },

@@ -29,9 +29,13 @@ export function useAdminMarkets(params?: {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
+  const { user, isAuthReady } = useAuthStore();
 
   const fetchMarkets = useCallback(async () => {
+    if (!isAuthReady) {
+      return;
+    }
+    
     if (user?.role !== "admin") {
       setError("Unauthorized");
       setIsLoading(false);
@@ -51,7 +55,7 @@ export function useAdminMarkets(params?: {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.role, params?.status, params?.category, params?.limit, params?.offset]);
+  }, [user?.role, isAuthReady, params?.status, params?.category, params?.limit, params?.offset]);
 
   useEffect(() => {
     fetchMarkets();
@@ -120,9 +124,13 @@ export function useSettlement() {
   const [stats, setStats] = useState<SettlementStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
+  const { user, isAuthReady } = useAuthStore();
 
   const fetchData = useCallback(async () => {
+    if (!isAuthReady) {
+      return;
+    }
+    
     if (user?.role !== "admin") {
       setError("Unauthorized");
       setIsLoading(false);
@@ -143,7 +151,7 @@ export function useSettlement() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.role]);
+  }, [user?.role, isAuthReady]);
 
   useEffect(() => {
     fetchData();
@@ -198,9 +206,13 @@ export function useAdminCrypto() {
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
+  const { user, isAuthReady } = useAuthStore();
 
   const fetchData = useCallback(async () => {
+    if (!isAuthReady) {
+      return;
+    }
+    
     if (user?.role !== "admin") {
       setError("Unauthorized");
       setIsLoading(false);
@@ -223,7 +235,7 @@ export function useAdminCrypto() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.role]);
+  }, [user?.role, isAuthReady]);
 
   useEffect(() => {
     fetchData();
