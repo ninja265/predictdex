@@ -208,15 +208,14 @@ function CreateMarketModal({
     e.preventDefault();
     if (!closesAtLocal) return;
     
-    setIsSubmitting(true);
-    
-    // datetime-local gives format: "2025-12-17T15:29"
-    // We need ISO 8601: "2025-12-17T15:29:00.000Z"
-    // Append :00.000Z if missing seconds/timezone
-    let isoDate = closesAtLocal;
-    if (!isoDate.includes(':00.')) {
-      isoDate = `${closesAtLocal}:00.000Z`;
+    // Parse datetime-local input and convert to ISO 8601
+    const parsedDate = new Date(closesAtLocal);
+    if (isNaN(parsedDate.getTime())) {
+      toast("Invalid date format. Please select a valid date and time.", "error");
+      return;
     }
+    
+    setIsSubmitting(true);
     
     const payload: AdminMarketCreate = {
       slug: formData.slug,
@@ -224,9 +223,8 @@ function CreateMarketModal({
       description: formData.description,
       category: formData.category,
       currency: formData.currency,
-      closesAt: isoDate,
+      closesAt: parsedDate.toISOString(),
     };
-    console.log("Creating market with payload:", payload);
     await onSubmit(payload);
     setIsSubmitting(false);
   };
