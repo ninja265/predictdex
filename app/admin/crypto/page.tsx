@@ -95,19 +95,19 @@ export default function AdminCryptoPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="border border-white/10 bg-white/5 px-4 py-3">
             <p className="text-xs uppercase tracking-widest text-mist">Pending Deposits</p>
-            <p className="text-2xl font-semibold text-gold mt-1">{depositStats.pendingCount}</p>
+            <p className="text-2xl font-semibold text-gold mt-1">{depositStats.pendingCount ?? 0}</p>
           </div>
           <div className="border border-white/10 bg-white/5 px-4 py-3">
             <p className="text-xs uppercase tracking-widest text-mist">Pending Volume</p>
-            <p className="text-2xl font-semibold text-white mt-1">${depositStats.pendingVolume.toLocaleString()}</p>
+            <p className="text-2xl font-semibold text-white mt-1">${(depositStats.pendingVolume ?? 0).toLocaleString()}</p>
           </div>
           <div className="border border-white/10 bg-white/5 px-4 py-3">
             <p className="text-xs uppercase tracking-widest text-mist">Credited Today</p>
-            <p className="text-2xl font-semibold text-white mt-1">{depositStats.creditedToday}</p>
+            <p className="text-2xl font-semibold text-white mt-1">{depositStats.creditedToday ?? 0}</p>
           </div>
           <div className="border border-white/10 bg-white/5 px-4 py-3">
             <p className="text-xs uppercase tracking-widest text-mist">Credited Volume Today</p>
-            <p className="text-2xl font-semibold text-white mt-1">${depositStats.creditedVolumeToday.toLocaleString()}</p>
+            <p className="text-2xl font-semibold text-white mt-1">${(depositStats.creditedVolumeToday ?? 0).toLocaleString()}</p>
           </div>
         </div>
       )}

@@ -89,7 +89,7 @@ export default function AdminMarketsPage() {
             <div key={i} className="h-24 bg-white/5 rounded animate-pulse"></div>
           ))}
         </div>
-      ) : markets.length === 0 ? (
+      ) : !markets || markets.length === 0 ? (
         <div className="text-center py-12 text-mist">
           No markets found
         </div>
@@ -117,10 +117,10 @@ export default function AdminMarketsPage() {
                   </div>
                   <h3 className="text-white font-medium">{market.question}</h3>
                   <p className="text-xs text-mist mt-2">
-                    Slug: {market.slug} | Volume: {market.symbol}{market.volume.toLocaleString()}
+                    Slug: {market.slug} | Volume: {market.symbol}{(market.volume ?? 0).toLocaleString()}
                   </p>
                   <p className="text-xs text-mist mt-1">
-                    YES: {(market.yesPrice * 100).toFixed(1)}% | NO: {(market.noPrice * 100).toFixed(1)}%
+                    YES: {((market.yesPrice ?? 0.5) * 100).toFixed(1)}% | NO: {((market.noPrice ?? 0.5) * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
