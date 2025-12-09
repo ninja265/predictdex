@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
@@ -19,28 +19,23 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, user, isLoading, checkAuth } = useAuthStore();
-  const [authChecked, setAuthChecked] = useState(false);
+  const { isAuthenticated, user, isLoading, isAuthReady, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    const verifyAuth = async () => {
-      await checkAuth();
-      setAuthChecked(true);
-    };
-    verifyAuth();
+    checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    if (authChecked && !isLoading) {
+    if (isAuthReady && !isLoading) {
       if (!isAuthenticated) {
         router.replace("/login");
       } else if (user?.role !== "admin") {
         router.replace("/");
       }
     }
-  }, [authChecked, isAuthenticated, user, isLoading, router]);
+  }, [isAuthReady, isAuthenticated, user, isLoading, router]);
 
-  if (!authChecked || isLoading) {
+  if (!isAuthReady || isLoading) {
     return (
       <div className="min-h-screen bg-midnight flex items-center justify-center">
         <div className="text-center">
