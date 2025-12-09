@@ -56,9 +56,8 @@ export default function HomePage() {
       <MarketsBoard
         title="Top Predictions in Africa"
         description="Trade trending narratives curated by our intelligence desk."
-        limit={20}
+        limit={6}
         offset={0}
-        initialCategory="Politics"
         showFilters={false}
       />
     </div>
