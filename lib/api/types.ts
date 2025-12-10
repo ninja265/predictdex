@@ -386,3 +386,61 @@ export interface AdminWithdrawal {
   createdAt: string;
   completedAt?: string;
 }
+
+export interface WithdrawalTokenLimits {
+  daily: number;
+  used: number;
+  remaining: number;
+  min: number;
+  max: number;
+}
+
+export interface WithdrawalLimitsResponse {
+  feeRate: number;
+  feePercentage: string;
+  limits: {
+    ETH: WithdrawalTokenLimits;
+    USDC: WithdrawalTokenLimits;
+    USDT: WithdrawalTokenLimits;
+  };
+}
+
+export interface WithdrawalRequest {
+  token: 'ETH' | 'USDC' | 'USDT';
+  amount: number;
+  destinationAddress: string;
+  idempotencyKey?: string;
+}
+
+export interface WithdrawalResponse {
+  withdrawalId: string;
+  token: string;
+  amount: number;
+  fee: number;
+  netAmount: number;
+  destinationAddress: string;
+  status: 'pending';
+  message: string;
+  newAvailableBalance: number;
+}
+
+export interface UserWithdrawal {
+  id: string;
+  token: string;
+  amount: number;
+  fee: number;
+  netAmount: number;
+  destinationAddress: string;
+  status: 'pending' | 'approved' | 'completed' | 'rejected';
+  txHash?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  processedAt?: string;
+}
+
+export interface WithdrawalHistoryResponse {
+  withdrawals: UserWithdrawal[];
+  total: number;
+  limit: number;
+  offset: number;
+}

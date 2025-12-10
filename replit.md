@@ -87,6 +87,7 @@ AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application f
 - Portfolio: GET /portfolio, GET /portfolio/history
 - Wallet: GET /wallet/balances, GET /wallet/transactions
 - Crypto: GET /crypto/deposit-addresses, GET /crypto/deposits/pending
+- Withdrawals: GET /crypto/withdrawals/limits, GET /crypto/withdrawals/history, POST /crypto/withdraw
 - Users: GET /users/me, PATCH /users/me
 
 ### Categories
@@ -101,8 +102,9 @@ AfricaPredicts is a Next.js 13 (App Router) Web3 prediction market application f
 ✅ Markets listing from production API
 ✅ Market detail pages with live order book (YES/NO toggle)
 ✅ Trading form with price preview and execution
-✅ Wallet dashboard with balances, portfolio, crypto deposits
+✅ Wallet dashboard with balances, portfolio, crypto deposits, withdrawals
 ✅ Enhanced deposit flow with QR codes for mobile
+✅ Crypto withdrawal requests with fee preview and daily limits
 ✅ Live crypto prices (CoinGecko API, refreshes every 60s)
 ✅ USD to crypto conversion reference table
 ✅ Minimum deposit amounts displayed (ETH: 0.001, USDC/USDT: $5)
@@ -235,6 +237,35 @@ const items = extractArrayFromResponse<Item>(response, 'items');
   - Update question, description, status, and closes at date
   - Timezone-safe datetime handling
   - Form state syncs correctly when switching between markets
+
+## Crypto Withdrawals (December 10, 2025)
+
+### User Withdrawal Flow
+1. User selects token (ETH/USDC/USDT) and enters amount
+2. System shows 1% fee and net amount to receive
+3. User enters destination Ethereum address
+4. Request submitted → Admin reviews within 24 hours
+5. Admin approves/rejects → Funds sent or returned
+
+### Withdrawal Limits
+| Token | Minimum | Maximum | Daily Limit |
+|-------|---------|---------|-------------|
+| ETH | 0.001 | 10 | 5 ETH |
+| USDC | 5 | 10,000 | 5,000 USDC |
+| USDT | 5 | 10,000 | 5,000 USDT |
+
+### Safeguards
+- **1% fee** on all withdrawals
+- **24-hour account age** requirement for new users
+- **Reserved balance protection** - funds locked in positions can't be withdrawn
+- **Address validation** - Ethereum format required
+- **Daily limits** tracked per token
+
+### Status Values
+- `pending` - Awaiting admin review
+- `approved` - Processing, admin will send
+- `completed` - Funds sent, txHash available
+- `rejected` - Request denied, funds returned
 
 ## Pre-Deployment Audit
 - **Audit Date:** December 8, 2025

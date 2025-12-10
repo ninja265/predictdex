@@ -32,6 +32,10 @@ import type {
   AdminDeposit,
   AdminDepositStats,
   AdminWithdrawal,
+  WithdrawalLimitsResponse,
+  WithdrawalRequest,
+  WithdrawalResponse,
+  WithdrawalHistoryResponse,
 } from './types';
 
 const API_BASE_URL = 'https://sa-api-server-1.replit.app/api/v1';
@@ -473,6 +477,28 @@ class ApiClient {
     return this.request(`/admin/crypto/withdrawals/${id}/complete`, {
       method: 'POST',
       body: JSON.stringify({ txHash }),
+    });
+  }
+
+  async getWithdrawalLimits(): Promise<WithdrawalLimitsResponse> {
+    return this.request('/crypto/withdrawals/limits');
+  }
+
+  async getWithdrawalHistory(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<WithdrawalHistoryResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.limit !== undefined) searchParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return this.request(`/crypto/withdrawals/history${query ? `?${query}` : ''}`);
+  }
+
+  async requestWithdrawal(data: WithdrawalRequest): Promise<WithdrawalResponse> {
+    return this.request('/crypto/withdraw', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 }

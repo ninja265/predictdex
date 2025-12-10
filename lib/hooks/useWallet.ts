@@ -11,6 +11,10 @@ import type {
   DepositAddress,
   PendingDeposit,
   CurrencyCode,
+  WithdrawalLimitsResponse,
+  UserWithdrawal,
+  WithdrawalRequest,
+  WithdrawalResponse,
 } from "@/lib/api/types";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 
@@ -251,4 +255,64 @@ export function useCryptoDeposits(): UseCryptoDepositsReturn {
   }, [fetchData]);
 
   return { addresses, pending, isLoading, error, refetch: fetchData };
+}
+
+interface UseWithdrawalsReturn {
+  limits: WithdrawalLimitsResponse | null;
+  withdrawals: UserWithdrawal[];
+  isLoading: boolean;
+  error: string | null;
+  submitWithdrawal: (data: WithdrawalRequest) => Promise<WithdrawalResponse | null>;
+  refetch: () => Promise<void>;
+}
+
+export function useWithdrawals(): UseWithdrawalsReturn {
+  const [limits, setLimits] = useState<WithdrawalLimitsResponse | null>(null);
+  const [withdrawals, setWithdrawals] = useState<UserWithdrawal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuthStore();
+
+  const fetchData = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLimits(null);
+      setWithdrawals([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [limitsRes, historyRes] = await Promise.all([
+        apiClient.getWithdrawalLimits(),
+        apiClient.getWithdrawalHistory({ limit: 20 }),
+      ]);
+      setLimits(limitsRes);
+      setWithdrawals(historyRes.withdrawals || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load withdrawal info");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const submitWithdrawal = useCallback(async (data: WithdrawalRequest): Promise<WithdrawalResponse | null> => {
+    setError(null);
+    try {
+      const response = await apiClient.requestWithdrawal(data);
+      await fetchData();
+      return response;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Withdrawal request failed";
+      setError(message);
+      throw new Error(message);
+    }
+  }, [fetchData]);
+
+  return { limits, withdrawals, isLoading, error, submitWithdrawal, refetch: fetchData };
 }
