@@ -223,14 +223,18 @@ const items = extractArrayFromResponse<Item>(response, 'items');
 | Tanzania | TZ | 1 |
 | Morocco | MA | 1 |
 
-## Admin Country Selector (December 9, 2025)
+## Admin Market Management (December 10, 2025)
 
-The admin Create Market form now includes a country selector:
-- Countries grouped by region (West Africa, East Africa, Southern Africa, North Africa, Central Africa)
-- Flag emojis displayed with country names
-- Optional field - markets can be created without a country
-- Country code sent to backend API when creating markets
-- Existing markets display their country in the admin list
+### Create Market
+- Country selector grouped by region with flag emojis
+- Optional country field - markets can be created without a country
+
+### Launch & Edit Markets
+- **Launch button** on DRAFT markets - one-click to change status to "open"
+- **Edit modal** for all markets:
+  - Update question, description, status, and closes at date
+  - Timezone-safe datetime handling
+  - Form state syncs correctly when switching between markets
 
 ## Pre-Deployment Audit
 - **Audit Date:** December 8, 2025
