@@ -165,7 +165,7 @@ export default function AdminCryptoPage() {
                       </span>
                     </div>
                     <p className="text-xs text-mist mt-1">
-                      TX: {truncateAddress(deposit.txHash, 12)} | User: {deposit.userEmail || deposit.userId.slice(0, 8)}
+                      TX: {truncateAddress(deposit.txHash, 12)} | User: {deposit.userEmail || (deposit.userId ? deposit.userId.slice(0, 8) : 'Unknown')}
                     </p>
                   </div>
                   <button
@@ -208,7 +208,7 @@ export default function AdminCryptoPage() {
                         </span>
                       </div>
                       <p className="text-xs text-mist mt-1">
-                        To: {truncateAddress(withdrawal.toAddress, 12)} | User: {withdrawal.userEmail || withdrawal.userId.slice(0, 8)}
+                        To: {truncateAddress(withdrawal.toAddress, 12)} | User: {withdrawal.userEmail || (withdrawal.userId ? withdrawal.userId.slice(0, 8) : 'Unknown')}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
