@@ -352,15 +352,43 @@ export default function WalletDashboard() {
               {pending.length > 0 && (
                 <div className="mt-6">
                   <p className="text-xs uppercase tracking-[0.4em] text-mist mb-4">Pending Deposits</p>
-                  <div className="space-y-2">
-                    {pending.map((dep, i) => (
-                      <div key={i} className="flex items-center justify-between border border-yellow-500/20 bg-yellow-900/10 px-4 py-3">
-                        <span className="text-sm text-yellow-400">
-                          {dep.amount} {dep.token} - {dep.confirmations}/{dep.requiredConfirmations} confirmations
-                        </span>
-                        <span className="text-xs text-mist">{truncateAddress(dep.txHash, 6)}</span>
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {pending.map((dep, i) => {
+                      const progress = Math.min((dep.confirmations / dep.requiredConfirmations) * 100, 100);
+                      return (
+                        <div key={i} className="border border-yellow-500/20 bg-yellow-900/10 px-4 py-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-white">
+                              {formatCryptoAmount(dep.amount, dep.token)}
+                            </span>
+                            <a 
+                              href={getExplorerTxUrl(dep.txHash)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-royal hover:text-gold transition-colors"
+                            >
+                              {truncateAddress(dep.txHash, 8)}
+                            </a>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-2 bg-charcoal rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-yellow-500 transition-all duration-500"
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-yellow-400 whitespace-nowrap">
+                              {dep.confirmations}/{dep.requiredConfirmations}
+                            </span>
+                          </div>
+                          <p className="text-xs text-mist mt-2">
+                            {dep.confirmations >= dep.requiredConfirmations 
+                              ? "Ready to credit" 
+                              : `Waiting for ${dep.requiredConfirmations - dep.confirmations} more confirmation${dep.requiredConfirmations - dep.confirmations === 1 ? '' : 's'}`}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
