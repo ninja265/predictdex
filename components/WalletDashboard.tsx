@@ -82,7 +82,9 @@ export default function WalletDashboard() {
     return balance ? { available: balance.available, reserved: balance.reserved } : { available: 0, reserved: 0 };
   };
 
-  const calculateFee = (amount: number) => amount * 0.01;
+  const feeRate = withdrawLimits?.feeRate ?? 0.01;
+  const feePercentage = withdrawLimits?.feePercentage ?? "1%";
+  const calculateFee = (amount: number) => amount * feeRate;
   const calculateNet = (amount: number) => amount - calculateFee(amount);
 
   const isValidEthAddress = (address: string) => /^0x[a-fA-F0-9]{40}$/.test(address);
@@ -600,7 +602,7 @@ export default function WalletDashboard() {
                             <span className="text-white">{formatCryptoAmount(amount, withdrawToken)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-mist">Fee (1%)</span>
+                            <span className="text-mist">Fee ({feePercentage})</span>
                             <span className="text-yellow-400">-{formatCryptoAmount(fee, withdrawToken)}</span>
                           </div>
                           <div className="flex justify-between text-sm border-t border-white/10 pt-2">
@@ -680,7 +682,7 @@ export default function WalletDashboard() {
 
           <div className="border-t border-white/10 pt-4 mt-6">
             <p className="text-xs text-mist">
-              Withdrawals are reviewed by our team and processed within 24 hours. A 1% fee applies to all withdrawals.
+              Withdrawals are reviewed by our team and processed within 24 hours. A {feePercentage} fee applies to all withdrawals.
             </p>
           </div>
         </div>
