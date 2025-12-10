@@ -274,11 +274,25 @@ class ApiClient {
   }
 
   async getAllDepositAddresses(): Promise<Record<string, { address: string; network: string }>> {
-    return this.request('/crypto/deposit-addresses');
+    const response = await this.request<{
+      addresses: Array<{ token: string; address: string }>;
+      network: string;
+      isTestnet: boolean;
+    }>('/crypto/deposit-addresses');
+    
+    // Transform array response to Record format expected by frontend
+    const result: Record<string, { address: string; network: string }> = {};
+    if (response.addresses && Array.isArray(response.addresses)) {
+      response.addresses.forEach(addr => {
+        result[addr.token] = { address: addr.address, network: response.network };
+      });
+    }
+    return result;
   }
 
   async getPendingDeposits(): Promise<PendingDeposit[]> {
-    return this.request('/crypto/deposits/pending');
+    const response = await this.request<{ deposits: PendingDeposit[] }>('/crypto/deposits/pending');
+    return response.deposits || [];
   }
 
   async getDepositHistory(params?: {
