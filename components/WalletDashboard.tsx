@@ -254,8 +254,8 @@ export default function WalletDashboard() {
                 <div key={i} className="h-20 bg-white/5 rounded"></div>
               ))}
             </div>
-          ) : !addresses ? (
-            <p className="text-mist">Unable to load deposit addresses</p>
+          ) : !addresses || Object.keys(addresses).length === 0 ? (
+            <p className="text-mist">Unable to load deposit addresses. Please try clicking Refresh.</p>
           ) : (
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-3">

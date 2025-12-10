@@ -274,25 +274,58 @@ class ApiClient {
   }
 
   async getAllDepositAddresses(): Promise<Record<string, { address: string; network: string }>> {
-    const response = await this.request<{
-      addresses: Array<{ token: string; address: string }>;
-      network: string;
-      isTestnet: boolean;
-    }>('/crypto/deposit-addresses');
+    const response = await this.request<any>('/crypto/deposit-addresses');
     
-    // Transform array response to Record format expected by frontend
-    const result: Record<string, { address: string; network: string }> = {};
+    // If response has addresses array (new API format from docs)
     if (response.addresses && Array.isArray(response.addresses)) {
-      response.addresses.forEach(addr => {
-        result[addr.token] = { address: addr.address, network: response.network };
+      const result: Record<string, { address: string; network: string }> = {};
+      response.addresses.forEach((addr: { token: string; address: string }) => {
+        result[addr.token] = { 
+          address: addr.address, 
+          network: response.network || 'Ethereum Sepolia Testnet' 
+        };
       });
+      return result;
     }
-    return result;
+    
+    // If response is already a Record with token keys (ETH, USDC, USDT)
+    // This was the original format the frontend expected
+    const result: Record<string, { address: string; network: string }> = {};
+    for (const key of Object.keys(response)) {
+      if (['ETH', 'USDC', 'USDT', 'eth', 'usdc', 'usdt'].includes(key)) {
+        const val = response[key];
+        if (val && typeof val === 'object' && val.address) {
+          result[key.toUpperCase()] = {
+            address: val.address,
+            network: val.network || 'Ethereum Sepolia Testnet'
+          };
+        }
+      }
+    }
+    
+    // If we got results, return them
+    if (Object.keys(result).length > 0) {
+      return result;
+    }
+    
+    // Fallback: return the response as-is if it looks like the expected format
+    return response as Record<string, { address: string; network: string }>;
   }
 
   async getPendingDeposits(): Promise<PendingDeposit[]> {
-    const response = await this.request<{ deposits: PendingDeposit[] }>('/crypto/deposits/pending');
-    return response.deposits || [];
+    const response = await this.request<any>('/crypto/deposits/pending');
+    
+    // If response has deposits array
+    if (response.deposits && Array.isArray(response.deposits)) {
+      return response.deposits;
+    }
+    
+    // If response is already an array
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    return [];
   }
 
   async getDepositHistory(params?: {
