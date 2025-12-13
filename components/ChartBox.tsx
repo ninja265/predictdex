@@ -13,7 +13,7 @@ export default function ChartBox({ title = "Price Action" }: Props) {
         <div className="h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:20px_20px]" />
       </div>
       <p className="mt-4 text-sm text-mist">
-        Placeholder chart. Integrate oracle feeds or historical data to draw real curves.
+        Price history chart coming soon
       </p>
     </div>
   );

@@ -1,0 +1,63 @@
+You are a senior QA + backend engineer performing a pre-production check.
+
+Goal:
+Confirm that:
+1) All critical functionality is covered by automated tests.
+2) The existing tests are passing.
+3) There are no obvious, foreseeable errors or high-risk gaps before deployment.
+
+Work through this in clear steps:
+
+1. Test Suite Inventory
+- List all existing test suites (unit, integration, E2E) and what they cover.
+- Identify which domains are covered (auth, profiles, offers/deals, payments, messaging, notifications, admin, etc).
+- Highlight any critical features that currently have NO tests.
+
+2. Coverage & Gaps
+- For each critical feature, confirm there is at least:
+  - a happy-path test,
+  - a validation/invalid input test,
+  - an auth/permissions test,
+  - an error/edge-case test (not found, wrong state, etc).
+- Call out any missing test types per feature.
+- Explicitly list “high-risk untested areas”.
+
+3. Run & Validate Tests
+- Run the full test suite.
+- Report:
+  - total tests,
+  - passing vs failing,
+  - any flaky or skipped tests.
+- For any failure or flaky test, explain:
+  - root cause (if known),
+  - whether it blocks production,
+  - required fix.
+
+4. Foreseeable Error Check
+For each major area (auth, data writes, payments, offers/contracts, messaging, notifications, admin tools):
+
+- Identify:
+  - obvious edge cases that are not tested,
+  - state transitions that could break (e.g., pending → approved → cancelled),
+  - potential null/undefined issues,
+  - GraphQL schema vs resolver mismatches,
+  - multi-tenant or permission leaks,
+  - race conditions, double-submits, or idempotency issues.
+
+- For each risk, state:
+  - How likely it is,
+  - What the impact would be,
+  - Whether there is a test covering it,
+  - If not, propose a concrete test to add.
+
+5. Pre-Prod Verdict & Action List
+Produce a final summary:
+
+- Overall readiness: READY / READY WITH RISKS / NOT READY.
+- List:
+  - blocking issues (must fix before deploy),
+  - high-priority tests to add,
+  - nice-to-have tests for later.
+- Suggest the exact next steps (in order) to get to a safe production deploy.
+
+Be specific, concrete, and pragmatic. Do not be vague. If something is unknown, say so and mark it as a risk.

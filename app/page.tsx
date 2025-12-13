@@ -1,6 +1,5 @@
 import Link from "next/link";
-import PredictionsBoard from "@/components/PredictionsBoard";
-import ConnectWalletButton from "@/components/ConnectWalletButton";
+import MarketsBoard from "@/components/MarketsBoard";
 
 export default function HomePage() {
   return (
@@ -12,7 +11,7 @@ export default function HomePage() {
             AfricaPredicts — The Pan-African Prediction Exchange
           </h1>
           <p className="text-lg text-mist">
-            Trade real-time predictions on politics, entertainment, and sports across the continent. Built
+            Trade real-time predictions on politics, civics, sports, and culture across the continent. Built
             with a futuristic, pan-African aesthetic for serious traders and bold storytellers.
           </p>
           <div className="flex flex-wrap gap-4">
@@ -22,20 +21,25 @@ export default function HomePage() {
             >
               Start Trading
             </Link>
-            <ConnectWalletButton />
+            <Link
+              href="/login"
+              className="border border-royal/50 bg-royal/10 px-6 py-3 text-sm uppercase tracking-[0.4em] text-gold hover:bg-royal/20"
+            >
+              Sign In
+            </Link>
           </div>
         </div>
 
         <div className="space-y-6 border border-white/5 bg-charcoal/50 p-6">
-          <p className="text-xs uppercase tracking-[0.35em] text-mist">Live Liquidity</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-mist">Platform Stats</p>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.35em] text-mist">Total Locked</p>
-              <p className="text-3xl font-semibold text-gold">$8.3M</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-mist">Markets</p>
+              <p className="text-3xl font-semibold text-gold">Live</p>
             </div>
             <div className="border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.35em] text-mist">Active Traders</p>
-              <p className="text-3xl font-semibold text-electric">12,480</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-mist">Currencies</p>
+              <p className="text-3xl font-semibold text-electric">ETH • USDC</p>
             </div>
           </div>
           <div>
@@ -49,12 +53,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <PredictionsBoard
-        title="Top 10 Predictions in Africa"
-        description="Instantly trade trending narratives curated by our intelligence desk."
-        limit={10}
+      <MarketsBoard
+        title="Top Predictions in Africa"
+        description="Trade trending narratives curated by our intelligence desk."
+        limit={6}
+        offset={0}
+        showFilters={false}
       />
     </div>
   );
 }
-

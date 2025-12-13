@@ -1,4 +1,4 @@
-import PredictionsBoard from "@/components/PredictionsBoard";
+import MarketsBoard from "@/components/MarketsBoard";
 
 export default function MarketsPage() {
   return (
@@ -7,16 +7,15 @@ export default function MarketsPage() {
         <p className="text-xs uppercase tracking-[0.4em] text-gold">Markets</p>
         <h1 className="mt-4 text-4xl font-semibold text-white">Trade live narratives across Africa</h1>
         <p className="mt-3 text-sm text-mist">
-          Filter by country or category to laser in on your thesis. Prices update the second liquidity moves.
+          Filter by category to laser in on your thesis. Prices update in real-time.
         </p>
       </header>
 
-      <PredictionsBoard
+      <MarketsBoard
         title="Live Markets"
-        description="Zero spread, transparent fees, and oracle-backed resolution."
+        description="Transparent fees and oracle-backed resolution."
         showFilters
       />
     </div>
   );
 }
-

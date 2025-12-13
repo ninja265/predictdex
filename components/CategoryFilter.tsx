@@ -1,6 +1,6 @@
 "use client";
 
-import { categories } from "@/data/predictions";
+const categories = ["Politics", "Civics", "Sports", "Culture"] as const;
 
 type Props = {
   value: string | null;

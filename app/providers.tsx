@@ -12,7 +12,11 @@ type Props = {
   children: ReactNode;
 };
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID || "demo";
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID || "";
+
+if (!projectId) {
+  console.warn("WalletConnect: NEXT_PUBLIC_WALLETCONNECT_ID not set. Wallet connections may fail.");
+}
 
 const { chains, publicClient } = configureChains(
   [mainnet, polygon, arbitrum, bsc],
